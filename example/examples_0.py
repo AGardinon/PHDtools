@@ -44,10 +44,14 @@ print(fes.kbT)
 
 fes_compute = dict(
     X = X[:,0],
-    Y = X[:,0],
+    Y = X[:,1],
     bins = 42,
 )
 
 compute_output = fes.fit(**fes_compute)
-print(compute_output, fes.fesDim)
+print(compute_output)
+print(len(compute_output['grid']))
 #print(fes.compute_dict.keys())
+
+compute_plot_output = fes.fit_plot(**fes_compute)
+print(compute_plot_output)

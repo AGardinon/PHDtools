@@ -6,7 +6,7 @@
 # -------------------------------------------------- #
 
 import numpy as np
-import matplotlib.pyplot as plt
+import phdtools.plots as phdplot
 
 # -------------------------------------------------- #
 # --- FES
@@ -37,34 +37,51 @@ class _BaseFES:
 
 
 class FES(_BaseFES):
-    """Class to compute and plot the pseudo-FES"""
+    """Class to compute and plot the pseudo-FES."""
     def __init__(self, units, temp):
         super().__init__(units, temp)
 
-    def fit_plot(self):
-        pass
+    def fit_plot(self, X, Y, bins, range=None, levels=None):
+        """
+        Returns a Dictionary with the fit data.
+        According if the fit is 1D or 2D it changes.
+        Quickly plot the data as well.
+        """
+        if not levels:
+            levels = 10
+        compute_dict = self._fit(X, Y, bins, range=range)
+        self._plot(levels=levels,**compute_dict)
+        return compute_dict
 
     def fit(self, X, Y, bins,
             range=None, fillEmpty=True):
+        """
+        Returns a Dictionary with the fit data.
+        According if the fit is 1D or 2D it changes.
+        """
         return self._fit(X, Y, bins, range=None, fillEmpty=True)
 
     def plot(self):
-        print('plotting time')
+        print("Plotting time")
+        print("Not yet implemented.")
+        # probably best to put the plotting
+        # function in plt tools as stand alone
+        # in addition to this.
         pass
 
     def _fit(self, X, Y, bins, range=None, fillEmpty=True):
-        # <-> Double variables, 2D fes <->
+        # -> Double variables, 2D fes
         if isinstance(Y, (list, np.ndarray)):
             H, xedges, yedges = np.histogram2d(X, Y, bins=bins, 
                                                range=range, density=True)
             Z = self._histo_to_fes(H, fillEmpty)
             XX, YY = self._2DmeshGrid(xedges, yedges, bins)
             compute_dict = dict(fes = Z.T, 
-                                mesh_grid = (XX, YY))
-            self.fesDim = '2D'
+                                grid = (XX, YY))
+            self._fesDim = '2D'
             return compute_dict
 
-        # <-> Single variable, 1D fes <->
+        # -> Single variable, 1D fes
         elif not Y:
             # 1. compute Histograms
             H, edges = np.histogram(X, bins=bins, range=range, density=True)
@@ -74,10 +91,52 @@ class FES(_BaseFES):
             edges_ = edges[:-1]
             minVal = edges_[Z == np.min(Z)]
             compute_dict = dict(fes = Z.T, 
-                                edges = edges, 
+                                grid = edges, 
                                 min_value = minVal)
-            self.fesDim = '1D'
+            self._fesDim = '1D'
             return compute_dict
+
+    def _plot(self, grid, fes, levels,
+              #fesArgs, # -> needed?
+              figure=None, axes=None, 
+              ghost=False,
+              contlabels=True,
+              cbar=True,
+              cbar_label=None):
+        # Def fig and axes if not defined
+        if not figure and not axes:
+            figure, axes = phdplot.get_axes(1,1)
+
+        # Plot either 1D or 2D FES
+        # -> 1D
+        if self._fesDim == '1D':
+            print(f"Plotting {self._fesDim} FES.")
+            axes.plot(grid[:-1],fes)
+
+        # -> 2D
+        elif self._fesDim == '2D':
+            print(f"Plotting {self._fesDim} FES.")
+            X,Y = grid
+            cont = axes.contour(X, Y, fes, levels,
+                                colors='k', 
+                                linewidths=0.5, 
+                                zorder=2)
+            if not ghost:
+                surf = axes.contourf(X, Y, fes, levels,
+                                     cmap='coolwarm_r', 
+                                     zorder=1)
+                if cbar:
+                    cbar = figure.colorbar(surf,ax=axes)
+                    if cbar_label:
+                        cbar.set_label(cbar_label)
+            if contlabels:
+                axes.clabel(cont, inline=True, 
+                            colors='k', fontsize=8, 
+                            fmt='%1.1f', zorder=3)
+        
+        figure.savefig(f"{self._fesDim}_pseudo_fes.png")
+        
+
 
     def _histo_to_fes(self, H, fillEmpty):
         # inversion
