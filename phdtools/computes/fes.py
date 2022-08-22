@@ -1,5 +1,5 @@
 # -------------------------------------------------- #
-# Plot tools - FES
+# Computes - fes module
 #
 #
 # AUTHOR: Andrea Gardin
