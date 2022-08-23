@@ -95,7 +95,7 @@ class Traj(BaseTraj):
         dummy_frame = extract_molInfo(db=self._read(frames=0)[:1],
                                       mol_chemName_db=self.mol_chemName_db, 
                                       fct=self.rcutCorrection)[0]
-        traj_info['molIDs'] = dummy_frame.arrays['molID']
+        traj_info['molID'] = dummy_frame.arrays['molID']
         traj_info['molSym'] = dummy_frame.arrays['molSym']
         traj_info['atmsZ'] = dummy_frame.numbers
         return traj_info
@@ -108,11 +108,21 @@ class Traj(BaseTraj):
         ase_db = self._read(frames=frames)
         if Zshift_tuple:
             new_Znumbers = self._shift_Znumbers(Zshift_tuple=Zshift_tuple)
-            for snap in ase_db:
+            for snap in tqdm(ase_db, desc='Applying Z shift'):
                 snap.numbers = new_Znumbers
         return ase_db
 
+    def read_COM(self, frames, save_traj=False):
+        ase_COM_db = self._get_molCOM(ase_db=self._read(frames=frames),
+                                      molID=self.infoDict['molID'], 
+                                      molSym=self.infoDict['molSym'])
+        if save_traj:
+            self._save_traj(ase_db=ase_COM_db, name='COM_traj', frames=frames)
+        return ase_COM_db
+
+
     def _read(self, frames):
+        print("\nReading trajectory ...")
         if type(frames) == int:
             ase_dbtraj_list = read(self.trajPath, index=f'{frames}:{frames+1}')
         elif type(frames) == tuple:
@@ -127,6 +137,21 @@ class Traj(BaseTraj):
             else:
                 raise ValueError("Only accepted value is 'all' to read all the frames.")
         return ase_dbtraj_list
+
+    def _get_molCOM(self, ase_db, molID, molSym):
+        # how to set their names ??
+        ase_COMdb = list()
+        for at in tqdm(ase_db, desc='Computing mol COM'):
+            molCOM_tmp = list()
+            for m in np.unique(molID):
+                mol = at[molID==m] #copy by value
+                mass = mol.get_masses()
+                cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+                molCOM_tmp.append(cm)
+            newmol = Atoms(positions=np.array(molCOM_tmp), pbc=True, cell=at.cell)
+            newmol.arrays['molSym'] = np.array(molSym)
+            ase_COMdb.append(newmol)
+        return ase_COMdb
 
     def _shift_Znumbers(self, Zshift_tuple):
         mol_toshift, Z_toshift = Zshift_tuple
@@ -160,4 +185,5 @@ class Traj(BaseTraj):
             save_name = save_name+'.'+format
         else:
             save_name = 'output_traj'+'.'+format
+        print(f"Saving trajectory to file {save_name} ...")
         return write(save_name, ase_db)

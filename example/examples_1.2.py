@@ -12,6 +12,10 @@ aseTraj = asetools.Traj(**input_dict)
 print(aseTraj.mol_chemName_db)
 
 print(aseTraj.infoDict.keys())
+print(aseTraj.infoDict['molID'])
 
 traj_db = aseTraj.read(frames=(0,10,1))
 assert len(traj_db) == 10
+
+traj_COM_db = aseTraj.read_COM(frames=(0,10,1))
+assert len(traj_COM_db) == 10
