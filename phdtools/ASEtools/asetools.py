@@ -13,9 +13,10 @@ from .atomstools import *
 from phdtools.computes import misc
 
 # -------------------------------------------------- #
-# --- trajtools
+# --- trajtools 
 
-class _BaseTraj:
+# -- base class
+class BaseTraj:
 
     DBFILE = os.path.dirname(__file__) + "/chemFormulaToName.json"
 
@@ -28,7 +29,7 @@ class _BaseTraj:
     def __init__(self, 
                  projectName, 
                  trajPath, 
-                 rcut_correction=1.0):
+                 rcut_correction=1.):
         self.projectName = projectName
         self.trajPath = trajPath
         self.rcutCorrection = rcut_correction
@@ -76,13 +77,87 @@ class _BaseTraj:
         except:
             raise NameError("Can not erase the project because is not there.")
 
-# --- helper functions
 
-# def _project_dict(project_dict_name):
-#     if type(project_dict_name) == str:
-#         assert '.json' in project_dict_name
-#         with open(project_dict_name) as jsonfile:
-#             name_dict = json.load(jsonfile)
-#     elif type(project_dict_name) == dict:
-#         name_dict = project_dict_name
-#     return name_dict
+# -------------------------------------------------- #
+# -- main class
+# Attributes:
+# + readd: frame, chunk, whole
+# + get COM-CG traj for the syst mol
+# + unwrap traj
+# + Z number shift (to cheat the atoms difference)
+
+class Traj(BaseTraj):
+    """ASE traj handles class"""
+
+    @property
+    def _get_info(self):
+        traj_info = dict()
+        dummy_frame = extract_molInfo(db=self._read(frames=0)[:1],
+                                      mol_chemName_db=self.mol_chemName_db, 
+                                      fct=self.rcutCorrection)[0]
+        traj_info['molIDs'] = dummy_frame.arrays['molID']
+        traj_info['molSym'] = dummy_frame.arrays['molSym']
+        traj_info['atmsZ'] = dummy_frame.numbers
+        return traj_info
+
+    def __init__(self, projectName, trajPath, rcut_correction=1.):
+        super().__init__(projectName, trajPath, rcut_correction)
+        self.infoDict = self._get_info
+
+    def read(self, frames, Zshift_tuple=None):
+        ase_db = self._read(frames=frames)
+        if Zshift_tuple:
+            new_Znumbers = self._shift_Znumbers(Zshift_tuple=Zshift_tuple)
+            for snap in ase_db:
+                snap.numbers = new_Znumbers
+        return ase_db
+
+    def _read(self, frames):
+        if type(frames) == int:
+            ase_dbtraj_list = read(self.trajPath, index=f'{frames}:{frames+1}')
+        elif type(frames) == tuple:
+            if len(frames) == 3:
+                b,e,s = frames
+                ase_dbtraj_list = read(self.trajPath, index=f'{b}:{e}:{s}')
+            else:
+                raise ValueError("Frame tupe must be of len=3 (begin, end, stide)")
+        elif type(frames) == str:
+            if frames == 'all':
+                ase_dbtraj_list = read(self.trajPath, index=f':')
+            else:
+                raise ValueError("Only accepted value is 'all' to read all the frames.")
+        return ase_dbtraj_list
+
+    def _shift_Znumbers(self, Zshift_tuple):
+        mol_toshift, Z_toshift = Zshift_tuple
+        toshift = np.max(self.infoDict['atmsZ'])
+        new_Znumbers = self.infoDict['atmsZ'].copy()
+        # loop inside the moltypes and select the right type
+        for idx, m in enumerate(self.infoDict['molSym']):
+            if m == mol_toshift:
+                # create a mask
+                mask = self.infoDict['molID'] == idx
+                for i,ture in enumerate(mask):
+                    if ture:
+                        if new_Znumbers in Z_toshift:
+                            new_Znumbers += toshift
+                        else:
+                            pass
+        return new_Znumbers
+
+    def _save_traj(ase_db, name='traj', format='extxyz', frames=None):
+        if format[0] == '.':
+            format = format[1:]
+        if frames:
+            if type(frames) == tuple:
+                add_str = '-'.join(map(str,frames))
+                save_name = name + add_str
+            elif type(frames) == int:
+                add_str = 'frame'+str(frames)
+                save_name = name + add_str
+            elif type(frames) == str:
+                save_name = name + frames
+            save_name = save_name+'.'+format
+        else:
+            save_name = 'output_traj'+'.'+format
+        return write(save_name, ase_db)

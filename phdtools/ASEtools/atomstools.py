@@ -47,6 +47,7 @@ def extract_molInfo(db, mol_chemName_db, fct=1):
                 molF.append(np.sum(mol.arrays['forces'], axis=0))
                 molT.append(np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0))
         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+        newmol.arrays['molID'] = molID
         newmol.arrays['molSym'] = np.array(molSym)
         if molQ:
             newmol.arrays['initial_charges'] = np.array(molQ)
