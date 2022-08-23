@@ -12,6 +12,7 @@ from tqdm import tqdm
 # --- Coordinate unwrapper
 
 class XYZunwrapper:
+    """Class to Unwrap trajectories."""
     METHODS = ("heuristic", "displacement", "hybrid")
 
     def __init__(self, xyz, box):
