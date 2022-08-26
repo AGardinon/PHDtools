@@ -12,10 +12,10 @@ import copy
 
 QUIPTYPES = ['soap', 'soap_turbo']
 
-def quipSOAP_string(params_dict, type):
-    if type == 'soap':
+def quipSOAP_string(params_dict, desc_type):
+    if desc_type == 'soap':
         return quipSOAP_to_str(params_dict)
-    elif type == 'soap_turbo':
+    elif desc_type == 'soap_turbo':
         return quipSOAPTURBO_to_str(params_dict)
     else:
         raise NameError(f"Type not implemented, types available: {QUIPTYPES}.")
@@ -57,9 +57,3 @@ def _params2qs(orig_params, multi):
         if key != "Zs":
             s += key + "=" + str(value) + " "
     return s
-
-
-# -------------------------------------------------- #
-# --- DScribe descriptor tools
-
-# empty
