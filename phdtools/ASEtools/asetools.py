@@ -16,7 +16,7 @@ from phdtools.computes import misc
 # --- trajtools 
 
 # -- base class
-class BaseTraj:
+class BaseUni:
 
     DBFILE = os.path.dirname(__file__) + "/chemFormulaToName.json"
 
@@ -86,33 +86,41 @@ class BaseTraj:
 # + unwrap traj
 # + Z number shift (to cheat the atoms difference)
 
-class Traj(BaseTraj):
+class Universe(BaseUni):
     """ASE traj handles class"""
 
     @property
     def _get_info(self):
+        print("\nGathering the Universe ...")
         traj_info = dict()
-        dummy_frame = extract_molInfo(db=self._read(frames=0)[:1],
-                                      mol_chemName_db=self.mol_chemName_db, 
-                                      fct=self.rcutCorrection)[0]
-        traj_info['molID'] = dummy_frame.arrays['molID']
-        traj_info['molSym'] = dummy_frame.arrays['molSym']
-        traj_info['atmsZ'] = dummy_frame.numbers
+        # general info on the atomistic traj
+        dummy_frame_atoms = self._read(frames=0)
+        traj_info['atmsZ'] = dummy_frame_atoms[0].numbers
+        # general infro on the molecular traj
+        dummy_frame_mols = extract_molInfo(db=dummy_frame_atoms,
+                                           mol_chemName_db=self.mol_chemName_db, 
+                                           fct=self.rcutCorrection)
+        traj_info['molSym'] = dummy_frame_mols[0].arrays['molSym']
+        traj_info['molID'] = dummy_frame_atoms[0].arrays['molID']
         return traj_info
 
     def __init__(self, projectName, trajPath, rcut_correction=1.):
         super().__init__(projectName, trajPath, rcut_correction)
         self.infoDict = self._get_info
 
-    def read(self, frames, Zshift_tuple=None):
+    def read(self, frames, Zshift_tuple=None, save_file=None):
+        print("\nReading trajectory ...")
         ase_db = self._read(frames=frames)
         if Zshift_tuple:
             new_Znumbers = self._shift_Znumbers(Zshift_tuple=Zshift_tuple)
             for snap in tqdm(ase_db, desc='Applying Z shift'):
                 snap.numbers = new_Znumbers
+        if save_file and type(save_file) == str:
+            self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
         return ase_db
 
     def read_COM(self, frames, save_traj=False):
+        print("\nReading trajectory and getting COM ...")
         ase_COM_db = self._get_molCOM(ase_db=self._read(frames=frames),
                                       molID=self.infoDict['molID'], 
                                       molSym=self.infoDict['molSym'])
@@ -122,7 +130,6 @@ class Traj(BaseTraj):
 
 
     def _read(self, frames):
-        print("\nReading trajectory ...")
         if type(frames) == int:
             ase_dbtraj_list = read(self.trajPath, index=f'{frames}:{frames+1}')
         elif type(frames) == tuple:
@@ -164,26 +171,31 @@ class Traj(BaseTraj):
                 mask = self.infoDict['molID'] == idx
                 for i,ture in enumerate(mask):
                     if ture:
-                        if new_Znumbers in Z_toshift:
-                            new_Znumbers += toshift
+                        if new_Znumbers[i] in Z_toshift:
+                            new_Znumbers[i] += toshift
                         else:
                             pass
         return new_Znumbers
 
-    def _save_traj(ase_db, name='traj', format='extxyz', frames=None):
-        if format[0] == '.':
+    def save_traj(self, ase_db, file_name, frames=None, format=None):
+        # -
+        if format and format[0] == '.':
             format = format[1:]
+        else:
+            format = 'extxyz'
+        # -  
         if frames:
             if type(frames) == tuple:
                 add_str = '-'.join(map(str,frames))
-                save_name = name + add_str
+                save_name = file_name + add_str
             elif type(frames) == int:
                 add_str = 'frame'+str(frames)
-                save_name = name + add_str
+                save_name = file_name + add_str
             elif type(frames) == str:
-                save_name = name + frames
+                save_name = file_name + frames
             save_name = save_name+'.'+format
         else:
-            save_name = 'output_traj'+'.'+format
+            save_name = file_name+'.'+format
         print(f"Saving trajectory to file {save_name} ...")
-        return write(save_name, ase_db)
+        write(save_name, ase_db, format=format)
+
