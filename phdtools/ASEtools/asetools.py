@@ -10,7 +10,7 @@ import json
 import numpy as np
 from ase.io import read, write
 from .atomstools import *
-from phdtools.computes import misc
+from phdtools.computes import misc, traj
 
 # -------------------------------------------------- #
 # --- trajtools 
@@ -115,19 +115,38 @@ class Universe(BaseUni):
             new_Znumbers = self._shift_Znumbers(Zshift_tuple=Zshift_tuple)
             for snap in tqdm(ase_db, desc='Applying Z shift'):
                 snap.numbers = new_Znumbers
-        if save_file and type(save_file) == str:
-            self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
+        if save_file:
+            if type(save_file) == str:
+                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
+            else:
+                save_file = 'output_traj_'
+                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
         return ase_db
 
-    def read_COM(self, frames, save_traj=False):
+    def read_COM(self, frames, save_file=False):
         print("\nReading trajectory and getting COM ...")
-        ase_COM_db = self._get_molCOM(ase_db=self._read(frames=frames),
+        ase_db = self._get_molCOM(ase_db=self._read(frames=frames),
                                       molID=self.infoDict['molID'], 
                                       molSym=self.infoDict['molSym'])
-        if save_traj:
-            self._save_traj(ase_db=ase_COM_db, name='COM_traj', frames=frames)
-        return ase_COM_db
+        if save_file:
+            if type(save_file) == str:
+                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
+            else:
+                save_file = 'output_trajCOM_'
+                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
+        return ase_db
 
+    def MolUnwrapper(self, ase_mol_db, mol_species, method='hybrid', save_file=False):
+        uw_trajs = self._unwrapper(ase_mol_db, mol_species, method)
+        if save_file:
+            for mol,uwpos in uw_trajs.items():
+                if type(save_file) == str:
+                    file_name_tmp = save_file+'unwrapped_'+mol+'_traj'
+                    np.save(file_name_tmp, uwpos)
+                else:
+                    file_name_tmp = 'unwrapped_'+mol+'_traj'
+                    np.save(file_name_tmp, uwpos)
+        return uw_trajs
 
     def _read(self, frames):
         if type(frames) == int:
@@ -176,6 +195,26 @@ class Universe(BaseUni):
                         else:
                             pass
         return new_Znumbers
+
+    def _unwrapper(self, ase_mol_db, mol_species, method):
+        uw_coord_dict = dict()
+        uw_object = traj.XYZunwrapper(method=method)
+        # for now it is intended to unwrap only molecules COM
+        xyz_pos = [cf.positions for cf in ase_mol_db]
+        # assuming is cubic
+        box_val = [cf.cell[0][0] for cf in ase_mol_db]
+        spec_ref_idx = [[i for i,spec in enumerate(self.infoDict['molSym']) 
+                        if spec == mol]
+                        for mol in mol_species]
+        # looping and unwraping
+        for j,mask in enumerate(spec_ref_idx):
+            # init the list container
+            uw_coord_dict[mol_species[j]] = list()
+            # unwrap
+            for idx in tqdm(mask, desc=f"\tUnwrapping: {mol_species[j]}"):
+                w = np.array([ts[idx].position for ts in ase_mol_db])
+                uw_coord_dict[mol_species[j]].append(uw_object.run(xyz=xyz_pos, box=box_val))
+        return uw_coord_dict
 
     def save_traj(self, ase_db, file_name, frames=None, format=None):
         # -

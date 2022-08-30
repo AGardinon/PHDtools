@@ -13,30 +13,29 @@ from tqdm import tqdm
 
 class XYZunwrapper:
     """Class to Unwrap trajectories."""
-    METHODS = ("heuristic", "displacement", "hybrid")
 
-    def __init__(self, xyz, box):
-        self.xyz = xyz
-        self.box = box
-
-    def __call__(self):
+    @property
+    def _methods_dict(self):
         methods_function_dict = dict(
             heuristic = heuristic_unwrapping,
             displacement = heuristic_unwrapping,
             hybrid = hybrid_unwrapping,
         )
-        self._methods_functions_dict = methods_function_dict
+        return methods_function_dict
 
-    def run(self, method):
-        return self._run(method)
+    def __init__(self, method):
+        self.method = method
+        self.methdos_list = list(self._methods_dict.keys())
+        if self.method not in self.methdos_list:
+            raise ValueError(f"Chosen method not available, choose from {self.methdos_list}")
 
-    def _run(self, method):
-        if not method in XYZunwrapper.METHODS:
-            raise ValueError(f'Method not recognised, available: {XYZunwrapper.METHODS}')
-        print(f'Method: {method}')
-        unwrappedXYZ = self._methods_functions_dict[method](w=self.xyz, 
-                                                            box=self.box)
-        return unwrappedXYZ
+    def run(self, xyz, box, verbose=False):
+        if verbose:
+            print(f"Unwrapping the trajectory with {self.method} method.")
+        return self._run(xyz, box)
+
+    def _run(self, xyz, box):
+        return self._methods_dict[self.method](w=xyz, box=box)
 
 # -- Helper functions
 def heuristic_unwrapping(w,box):

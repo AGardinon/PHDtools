@@ -9,7 +9,6 @@
 # -------------------------------------------------- #
 
 import numpy as np
-import json
 from tqdm import tqdm
 from ase import Atoms
 from ase import neighborlist
