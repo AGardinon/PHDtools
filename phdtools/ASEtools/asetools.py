@@ -232,7 +232,6 @@ class Universe(BaseUni):
         uw_coord_dict = dict()
         uw_object = traj.XYZunwrapper(method=method)
         # for now it is intended to unwrap only molecules COM
-        #xyz_pos = [cf.positions for cf in ase_mol_db]
         # assuming is cubic
         box_val = [cf.cell[0][0] for cf in ase_mol_db]
         spec_ref_idx = [[i for i,spec in enumerate(self.infoDict['molSym']) 
