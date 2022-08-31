@@ -131,3 +131,4 @@ dmypy.json
 # dummy export
 tmp_pypath.export
 example_output/
+old_examples_files/

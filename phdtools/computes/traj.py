@@ -47,7 +47,7 @@ def heuristic_unwrapping(w,box):
     difw = np.diff(w, axis=0)
     # ---
     # Eq. 1 Heuristic method
-    for i,dw in tqdm(enumerate(difw), desc='Unwrapping'):
+    for i,dw in enumerate(difw):
         u[i+1] = w[i+1]-np.floor((w[i+1]-u[i])/box[i+1]+0.5)*box[i+1]
     return u
 
@@ -60,7 +60,7 @@ def displacement_unwrapping(w,box):
     difw = np.diff(w, axis=0)
     # ---
     # Eq 2. Displacemnet method
-    for i,dw in tqdm(enumerate(difw), desc='Unwrapping'):
+    for i,dw in enumerate(difw):
         u[i+1] = u[i]+(w[i+1]-w[i])-np.floor((w[i+1]-w[i])/box[i+1]+0.5)*box[i+1]
     return u
         
@@ -73,7 +73,7 @@ def hybrid_unwrapping(w,box):
     difw = np.diff(w, axis=0)
     # ---
     # Eq. 12 Hybrid mehtod
-    for i,dw in tqdm(enumerate(difw), desc='Unwrapping'):
+    for i,dw in enumerate(difw):
         u[i+1] = u[i]+(w[i+1]-w[i])-np.floor((w[i+1]-w[i])/box[i+1]+0.5)*box[i+1]-np.floor((w[i]-u[i])/box[i]+0.5)*(box[i+1]-box[i])
     return u
 

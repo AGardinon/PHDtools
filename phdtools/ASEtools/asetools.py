@@ -108,6 +108,8 @@ class Universe(BaseUni):
         super().__init__(projectName, trajPath, rcut_correction)
         self.infoDict = self._get_info
 
+# ---
+
     def read(self, frames, Zshift_tuple=None, save_file=None):
         print("\nReading trajectory ...")
         ase_db = self._read(frames=frames)
@@ -123,20 +125,23 @@ class Universe(BaseUni):
                 self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
         return ase_db
 
+
     def read_COM(self, frames, save_file=False):
         print("\nReading trajectory and getting COM ...")
-        ase_db = self._get_molCOM(ase_db=self._read(frames=frames),
+        ase_mol_db = self._get_molCOM(ase_db=self._read(frames=frames),
                                       molID=self.infoDict['molID'], 
                                       molSym=self.infoDict['molSym'])
         if save_file:
             if type(save_file) == str:
-                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
+                self.save_traj(ase_db=ase_mol_db, file_name=save_file, frames=frames)
             else:
                 save_file = 'output_trajCOM_'
-                self.save_traj(ase_db=ase_db, file_name=save_file, frames=frames)
-        return ase_db
+                self.save_traj(ase_db=ase_mol_db, file_name=save_file, frames=frames)
+        return ase_mol_db
+
 
     def MolUnwrapper(self, ase_mol_db, mol_species, method='hybrid', save_file=False):
+        print("\nUnwrapping the trajectory ...")
         uw_trajs = self._unwrapper(ase_mol_db, mol_species, method)
         if save_file:
             for mol,uwpos in uw_trajs.items():
@@ -147,6 +152,33 @@ class Universe(BaseUni):
                     file_name_tmp = 'unwrapped_'+mol+'_traj'
                     np.save(file_name_tmp, uwpos)
         return uw_trajs
+
+
+    def read_COM_unwrap(self, frames, mol_species, method='hybrid', save_file=False):
+        print("\nReading trajectory and getting COM ...")
+        ase_mol_db = self._get_molCOM(ase_db=self._read(frames=frames),
+                                      molID=self.infoDict['molID'], 
+                                      molSym=self.infoDict['molSym'])
+        print("\n... and unwrapping ...")
+        uw_trajs = self._unwrapper(ase_mol_db, mol_species, method)
+        if save_file:
+            # saving files
+            if type(save_file) == str:
+                self.save_traj(ase_db=ase_mol_db, file_name=save_file, frames=frames)
+                # unwrapped trajs
+                for mol,uwpos in uw_trajs.items():
+                    save_file_uw = save_file+method+'unwrap_'+mol+'_'+'-'.join(map(str,frames))
+                    np.save(save_file_uw, uwpos)
+            else:
+                save_file = 'output_trajCOM_'
+                self.save_traj(ase_db=ase_mol_db, file_name=save_file, frames=frames)
+                # unwrapped trajs
+                for mol,uwpos in uw_trajs.items():
+                    save_file_uw = save_file+method+'unwrap_'+mol+'_'+'-'.join(map(str,frames))
+                    np.save(save_file_uw, uwpos)
+        return ase_mol_db, uw_trajs
+
+# ---
 
     def _read(self, frames):
         if type(frames) == int:
@@ -200,7 +232,7 @@ class Universe(BaseUni):
         uw_coord_dict = dict()
         uw_object = traj.XYZunwrapper(method=method)
         # for now it is intended to unwrap only molecules COM
-        xyz_pos = [cf.positions for cf in ase_mol_db]
+        #xyz_pos = [cf.positions for cf in ase_mol_db]
         # assuming is cubic
         box_val = [cf.cell[0][0] for cf in ase_mol_db]
         spec_ref_idx = [[i for i,spec in enumerate(self.infoDict['molSym']) 
@@ -211,9 +243,9 @@ class Universe(BaseUni):
             # init the list container
             uw_coord_dict[mol_species[j]] = list()
             # unwrap
-            for idx in tqdm(mask, desc=f"\tUnwrapping: {mol_species[j]}"):
+            for idx in tqdm(mask, desc=f"Unwrapping: {mol_species[j]}"):
                 w = np.array([ts[idx].position for ts in ase_mol_db])
-                uw_coord_dict[mol_species[j]].append(uw_object.run(xyz=xyz_pos, box=box_val))
+                uw_coord_dict[mol_species[j]].append(uw_object.run(xyz=w, box=box_val))
         return uw_coord_dict
 
     def save_traj(self, ase_db, file_name, frames=None, format=None):

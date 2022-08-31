@@ -32,11 +32,11 @@ ase_traj_db = ase_uni.read(frames=ex_frames,
 ase_trajCOM_db = ase_uni.read_COM(frames=ex_frames, 
                                   save_file='example_outputs/test_output_2_')
 
-print(np.shape(ase_trajCOM_db))
-# problema !!!
 
 unwrap_traj_dict = ase_uni.MolUnwrapper(ase_mol_db=ase_trajCOM_db, 
                                         mol_species=['Li', 'PF6'], 
                                         save_file='example_outputs/')
 
-print(unwrap_traj_dict.keys())
+ase_trajCOM_db = ase_uni.read_COM_unwrap(frames=ex_frames, 
+                        mol_species=['Li', 'PF6'],
+                        save_file='example_outputs/test_output_3_')
