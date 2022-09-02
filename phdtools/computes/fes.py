@@ -41,16 +41,14 @@ class FES(_BaseFES):
     def __init__(self, units, temp):
         super().__init__(units, temp)
 
-    def fit_plot(self, X, Y, bins, range=None, levels=None):
+    def fit_plot(self, X, Y, bins, range=None, plotArgs=None):
         """
         Returns a Dictionary with the fit data.
         According if the fit is 1D or 2D it changes.
         Quickly plot the data as well.
         """
-        if not levels:
-            levels = 10
         compute_dict = self._fit(X, Y, bins, range=range)
-        self._plot(levels=levels,**compute_dict)
+        self._plot(**compute_dict, **plotArgs)
         return compute_dict
 
     def fit(self, X, Y, bins,
@@ -96,13 +94,16 @@ class FES(_BaseFES):
             self._fesDim = '1D'
             return compute_dict
 
-    def _plot(self, grid, fes, levels,
-              #fesArgs, # -> needed?
+    def _plot(self, grid, fes, 
+              levels=None,
               figure=None, axes=None, 
               ghost=False,
               contlabels=True,
               cbar=True,
               cbar_label=None):
+        if not levels:
+            levels = 10
+
         # Def fig and axes if not defined
         if not figure and not axes:
             figure, axes = phdplot.get_axes(1,1)
