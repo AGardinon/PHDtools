@@ -27,7 +27,7 @@ def random_shuffle(X, Y=None, n=None):
 
 
 # probably it can be improved :(
-def FPS(X, n=-1, ndx=None):
+def FPS(X, n=-1, ndx=None, retDist=False):
     """
     Does Farthest Point Selection on a set of points X
     X is in the form of {X_i} with X_i(x_0,x_1,...,x_N)
@@ -65,7 +65,10 @@ def FPS(X, n=-1, ndx=None):
             print(f"Only {i} iteration possible")
             return fps_ndxs[:i], D[:i]
 
-        return fps_ndxs, D
+    if retDist:
+        return X[fps_ndxs], fps_ndxs, D
+    else:
+        return X[fps_ndxs], fps_ndxs
 
 
 def normalizeData(X, mean=None, std=None):
