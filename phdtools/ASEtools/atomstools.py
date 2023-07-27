@@ -57,23 +57,25 @@ def extract_molInfo(db, mol_chemName_db, fct=1):
     return moldb
 
 # - computes molIDs
-def get_molIDs(db, fct=1.0, return_mask=False):
+def get_molIDs(db, fct=1.0,
+               return_ids=False):
     """
     Compute the molecules ID and add the information
     to the at.arrays dictionary.
     """
-    masks = list()
     for at in db:
         # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
         _, molID = get_connected_atoms(at, fct)
         at.arrays['molID'] = molID
-        if return_mask:
-            mask = np.zeros([len(molID)]*2)
-            for mID in np.unique(molID):
-                mask += (((molID==mID).reshape(1,-1))*((molID==mID).reshape(-1,1))).astype(int)
-            masks += [mask]
-    if return_mask:
-        return masks
+        # if return_mask:
+        #     mask = np.zeros([len(molID)]*2)
+        #     for mID in np.unique(molID):
+        #         mask += (((molID==mID).reshape(1,-1))*((molID==mID).reshape(-1,1))).astype(int)
+        #     masks += [mask]
+    if return_ids:
+        return molID
+    else:
+        pass
 
 # - get chemical formulas
 def get_chemFormulas(at, fct=1.0):
