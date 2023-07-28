@@ -39,7 +39,7 @@ class Universe:
         self.projectName = projectName
         self.trajPath = trajPath
         self.rcutCorrection = None
-        self.mol_info_dict = dict()
+        self.info_dict = dict()
         # ---
         # init the project
         self._get_config
@@ -85,32 +85,51 @@ class Universe:
             raise ValueError("Given atom types does not match with the system types.\n")
 
     @misc.my_timer
-    def find_molecs(self) -> None:
+    def find_molecs(self, 
+                    mol_name: list = None) -> None:
+        """Finds the molecules as whole defined by the 
+        current LJ rcut.
+        """
         self.mol_dict = get_chemFormulas(self._at0, 
                                          fct=self.rcutCorrection)
+        print(f"Uniques molecules found: {len(self.mol_dict)}")
+        if mol_name:
+            self.mol_dict = self.set_mol_names(mol_name=mol_name)
         print(f"Molecules found: {self.mol_dict}")
+        # update the self.info_dict()
+        self.info_dict['names'] = self.mol_dict
         pass
     
+    # @property
+    def set_mol_names(self, 
+                      mol_name: list) -> dict:
+        """Set new specific names for molecules found by
+        Universe.find_molecs().
 
-    def set_mol_names(self, mol_name_list: list) -> dict:
-        try:
-            keys = list(self.mol_dict.keys())
-        except:
-            raise ValueError("The molecule dict is not set.\n"
-                             "(see `Universe.find_molecs` function)")
-        self.mol_names = {k:f for k,f in zip(keys, mol_name_list)}
-        # updating the self.mol_info_dict
-        self.mol_info_dict['names'] = self.mol_names
-        return self.mol_names
+        :param mol_name_list: List of names in the same order of appearence.
+        :type mol_name_list: list
+        :raises ValueError: The molecules needs to be defined before this operation.
+        :return: Dictionary with as args: custom mol names
+        :rtype: dict
+        """
+        if self.mol_dict:
+            if len(self.mol_dict) == len(mol_name):
+                for key,val in zip(self.mol_dict.keys(),mol_name):
+                    self.mol_dict[key] = val
+                self.info_dict['names'] = self.mol_dict
+                return self.mol_dict
+            else:
+                raise ValueError("The list of molecules provided is not compatible,"
+                                 "(the system has {len(self.mol_dict)} molecs)")
+        else:
+            raise ValueError("The molecules have to be found before setting the name.")
 
-    @misc.my_timer
+    @property
     def get_mol_info(self):
-        # """
-        # Get the molecules IDs for the frame configuration.
-        # (i.e., an array with N_mol index for each different molecule)
-        # The molIDs is also added in place to the at.array dict
-        # """
-        # self.molIDs = get_molIDs(at=self._at0,
-        #                          fct=self.rcutCorrection)
-        # return self.molIDs
+        print("Computing MolIDs\t...")
+        self.molIDs = get_molIDs(db=self._at0,
+                                 fct=self.rcutCorrection)       
+        print("Computing MolSymbols\t...")
+        for mol in np.unique(self.molIDs):
+            pass
         pass
