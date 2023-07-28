@@ -100,7 +100,7 @@ class Universe:
         self.info_dict['names'] = self.mol_dict
         pass
     
-    # @property
+
     def set_mol_names(self, 
                       mol_name: list) -> dict:
         """Set new specific names for molecules found by
@@ -126,10 +126,13 @@ class Universe:
 
     @property
     def get_mol_info(self):
+        # ---
         print("Computing MolIDs\t...")
-        self.molIDs = get_molIDs(db=self._at0,
-                                 fct=self.rcutCorrection)       
+        self.molIDs = get_molIDs(at=self._at0,
+                                 fct=self.rcutCorrection)
+        # ---
         print("Computing MolSymbols\t...")
-        for mol in np.unique(self.molIDs):
-            pass
+        self.molSym = get_molSym(at=self._at0,
+                                 molIDs=self.molIDs,
+                                 mol_name=self.mol_dict)
         pass

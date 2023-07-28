@@ -59,18 +59,35 @@ def extract_molInfo(db, mol_chemName_db, fct=1):
     return moldb
 
 @misc.my_timer
-def get_molIDs(db: Union[list, ase.ase.Atoms], 
+def get_molIDs(at: ase.ase.Atoms, 
                fct: Union[float, ase.ase.Atoms]) -> list:
-    if type(db) == list:
-        for at in db:
-            # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
-            _, molID = get_connected_atoms(at, fct)
-            at.arrays['molID'] = molID
-    else:
-        _, molID = get_connected_atoms(db, fct)
-        db.arrays['molID'] = molID
-    print(f"Total numner of molecule: {len(molID)}")
+    # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
+    _, molID = get_connected_atoms(at=at, 
+                                   fct=fct)
+    at.arrays['molID'] = molID
     return molID
+
+@misc.my_timer
+def get_molSym(at: ase.ase.Atoms,
+               molIDs: np.ndarray,
+               mol_name: dict) -> list:
+    """Get the molecules symbols as they appear in the system xyz configuration.
+
+    :param at: Atoms configuration.
+    :type at: ase.ase.Atoms
+    :param molIDs: Molecules IDs.
+    :type molIDs: np.ndarray
+    :param mol_name: Names association to chemical formulas.
+    :type mol_name: dict
+    :return: List of molecules of the atomic configuration.
+    :rtype: list
+    """
+    molSym = list()
+    for m in np.unique(molIDs):
+        mol = at[molIDs == m]
+        molSym.append(mol_name[mol.symbols.get_chemical_formula()])
+    print(f"Total numner of molecules: {len(molSym)}")
+    return molSym
 
 
 def get_chemFormulas(at: ase.ase.Atoms, 
