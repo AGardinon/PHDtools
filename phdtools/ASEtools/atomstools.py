@@ -14,7 +14,7 @@ import ase
 from ase import Atoms, neighborlist
 from scipy import sparse
 from typing import Union
-from phdtools.computes import misc
+from ..computes import misc
 
 # -------------------------------------------------- #
 # --- Atom tools

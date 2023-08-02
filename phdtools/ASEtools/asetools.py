@@ -10,7 +10,7 @@ import json
 import numpy as np
 from ase.io import read, write
 from .atomstools import *
-from phdtools.computes import misc, traj
+from ..computes import misc, traj
 
 # -------------------------------------------------- #
 # --- trajtools 
@@ -19,6 +19,7 @@ class ASEProjectManager:
 
     def func():
         pass
+
 
 class Universe:
 
@@ -35,24 +36,55 @@ class Universe:
         :param trajPath: Path for the traj file.
         :type trajPath: str
         """
-        # getting project info
+        # --- Universe info
+        # -
         self.projectName = projectName
         self.trajPath = trajPath
         self.rcutCorrection = None
-        self.info_dict = dict()
-        # ---
-        # init the project
+        self.moleculeNames = None
+        # --- init the project
+        # -
         self._get_config
         try:
             self.rcutCorrection = kwargs['rcutCorrection']
             print(f"rcut correction: {self.rcutCorrection}\n")
         except:
-            print("!!! Warning !!!\n"
-                  "`rcutCorrection` not set, default values will be used!"
+            print("!!! Warning: `rcutCorrection` not set !!!\n"
+                  "Default values will be used, "
+                  "this might cause artifacts in the molecules detection."
                   )
             # creates the default one
             self.rcutCorrection = {k:1.0 for k in self.symbols}
-            print(f"rcutCorrection = {self.rcutCorrection}")
+            print(f"rcutCorrection = {self.rcutCorrection}\n")
+        # -
+        print("Searching for molecules in the system ...\n")
+        try:
+            self.moleculeNames = kwargs['moleculeNames']
+            print(self.moleculeNames)
+        except:
+            print("!!! Warning: `moleculeNames` not set !!!\n"
+                  "Default molecules names will be used\n")
+        self.find_molecs(mol_name=self.moleculeNames)
+        self.get_mol_info
+        # - Update the dictionary
+        self.projectDictionary = dict(
+            projectName = self.projectName,
+            trajPath = self.trajPath,
+            rcutCorrection = self.rcutCorrection,
+            moleculeNames = self.moleculeNames,
+            moleculeFormulas = self.moleculeFormulas,
+            molIDs = self.molIDs,
+            molSym = self.molSym
+        )
+        # -
+        print("<end>")
+
+    @property
+    def _kwargs():
+        print("Possible kwargs:\n"
+              "-\t rcutCorrection: dict (Default=1.0)\n"
+              "-\t moleculeNames: list (Default='molXXX')")
+        pass
             
     @property
     def _get_config(self):
@@ -66,6 +98,7 @@ class Universe:
         print(f"Total atoms: {len(self._at0.symbols)}\n"
               f"Atom types: {self.symbols}\n"
               )
+        pass
 
 
     def set_rcut_correction(self, rcut_dict: dict) -> dict:
@@ -90,14 +123,13 @@ class Universe:
         """Finds the molecules as whole defined by the 
         current LJ rcut.
         """
-        self.mol_dict = get_chemFormulas(self._at0, 
-                                         fct=self.rcutCorrection)
-        print(f"Uniques molecules found: {len(self.mol_dict)}")
+        self.moleculeFormulas = get_chemFormulas(self._at0, 
+                                                 fct=self.rcutCorrection)
+        self.moleculeNames = list(self.moleculeFormulas.values())
+        print(f"Uniques molecules found: {len(self.moleculeFormulas)}")
         if mol_name:
-            self.mol_dict = self.set_mol_names(mol_name=mol_name)
-        print(f"Molecules found: {self.mol_dict}")
-        # update the self.info_dict()
-        self.info_dict['names'] = self.mol_dict
+            self.moleculeFormulas = self.set_mol_names(mol_name=mol_name)
+        print(f"Molecules found: {self.moleculeFormulas}")
         pass
     
 
@@ -112,27 +144,37 @@ class Universe:
         :return: Dictionary with as args: custom mol names
         :rtype: dict
         """
-        if self.mol_dict:
-            if len(self.mol_dict) == len(mol_name):
-                for key,val in zip(self.mol_dict.keys(),mol_name):
-                    self.mol_dict[key] = val
-                self.info_dict['names'] = self.mol_dict
-                return self.mol_dict
+        self.moleculeNames = mol_name
+        if self.moleculeFormulas:
+            if len(self.moleculeFormulas) == len(mol_name):
+                for key,val in zip(self.moleculeFormulas.keys(),mol_name):
+                    self.moleculeFormulas[key] = val
+                return self.moleculeFormulas
             else:
                 raise ValueError("The list of molecules provided is not compatible,"
-                                 "(the system has {len(self.mol_dict)} molecs)")
+                                 "(the system has {len(self.moleculeFormulas)} molecs)")
         else:
             raise ValueError("The molecules have to be found before setting the name.")
 
     @property
     def get_mol_info(self):
         # ---
-        print("Computing MolIDs\t...")
+        print("Computing MolIDs ...")
         self.molIDs = get_molIDs(at=self._at0,
                                  fct=self.rcutCorrection)
         # ---
-        print("Computing MolSymbols\t...")
+        print("Computing MolSymbols ...")
         self.molSym = get_molSym(at=self._at0,
                                  molIDs=self.molIDs,
-                                 mol_name=self.mol_dict)
+                                 mol_name=self.moleculeFormulas)
+        pass
+
+
+# --- Trajectory handling ---
+
+class ASEtraj(Universe):
+
+    def __init__(self, projectName: str, trajPath: str, **kwargs):
+        super().__init__(projectName, trajPath, **kwargs)
+
         pass
