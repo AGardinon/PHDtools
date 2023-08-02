@@ -11,7 +11,7 @@ import phdtools.plots as phdplot
 # -------------------------------------------------- #
 # --- FES
 
-class _BaseFES:
+class BaseFES:
     """Base FES class to init the computation"""
 
     kbUNITS = dict(
@@ -26,7 +26,7 @@ class _BaseFES:
 
     @property
     def kb(self):
-        return _BaseFES.kbUNITS[self.units]
+        return BaseFES.kbUNITS[self.units]
 
     @property
     def kbT(self):
@@ -36,7 +36,7 @@ class _BaseFES:
             return self.kb * self.temp
 
 
-class FES(_BaseFES):
+class FES(BaseFES):
     """Class to compute and plot the pseudo-FES."""
     def __init__(self, units, temp):
         super().__init__(units, temp)
@@ -96,7 +96,8 @@ class FES(_BaseFES):
 
     def _plot(self, grid, fes, 
               levels=None,
-              figure=None, axes=None, 
+              figure=None, 
+              axes=None, 
               ghost=False,
               contlabels=True,
               cbar=True,
@@ -134,8 +135,8 @@ class FES(_BaseFES):
                 axes.clabel(cont, inline=True, 
                             colors='k', fontsize=8, 
                             fmt='%1.1f', zorder=3)
-        
-        figure.savefig(f"{self._fesDim}_pseudo_fes.png")
+        # if save_fig:
+        #     figure.savefig(f"{self._fesDim}_pseudo_fes.png")
         
 
 
