@@ -13,7 +13,7 @@ from tqdm import tqdm
 import ase
 from ase import Atoms, neighborlist
 from scipy import sparse
-from typing import Union
+from typing import Union, Tuple
 from ..computes import misc
 
 # -------------------------------------------------- #
@@ -121,7 +121,7 @@ def find_molecules(at, fct=1.0):
 
 
 def get_connected_atoms(at: ase.ase.Atoms, 
-                        fct: Union[float, dict]) -> tuple[int, np.ndarray]:
+                        fct: Union[float, dict]) -> Tuple[int, np.ndarray]:
     cutOff = modif_natural_cutoffs(at, fct)
     nbLst = neighborlist.NeighborList(cutOff, 
                                       self_interaction=False, 
