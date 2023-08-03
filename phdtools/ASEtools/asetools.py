@@ -8,6 +8,7 @@
 import os
 import json
 import numpy as np
+from tqdm import tqdm
 from typing import Union, List
 from ase.io import read, write
 from .atomstools import *
@@ -193,7 +194,6 @@ class ASEtraj(Universe):
     :type Universe: class
     """
 
-
     def __init__(self, 
                  projectName: str, 
                  trajPath: str, 
@@ -227,6 +227,40 @@ class ASEtraj(Universe):
         self._frameRange = value
         pass
     
+    @misc.my_timer
+    def read(self, 
+             Zshift: Tuple[str, list] = None,
+             save_to_file: str = None) -> List[ase.ase.Atoms]:
+        """_summary_
+
+        :param Zshift: _description_, defaults to None
+        :type Zshift: Tuple[str, list], optional
+        :param save_to_file: _description_, defaults to None
+        :type save_to_file: str, optional
+        :return: _description_
+        :rtype: List[ase.ase.Atoms]
+        """
+        ase_db = self._read
+        # zshift
+        if Zshift:
+            # print("Applying Z number shift ...\n")
+            newZ = ZnumberShift(Znumbers=self._at0.numbers,
+                                molSymbols=self.molSym,
+                                molIDs=self.molIDs,
+                                to_shift=Zshift)
+            for snap in tqdm(ase_db, desc='Applying Z shift'):
+                snap.numbers = newZ
+        if save_to_file:
+            print("Not yet done.")
+
+        return ase_db
+    
+
+    def readMolCOM(self, 
+                   save_file=False):
+        pass
+
+    
     @property
     def _read(self) -> List[ase.ase.Atoms]:
         if isinstance(self._frameRange, tuple):
@@ -236,9 +270,8 @@ class ASEtraj(Universe):
                 s = 1
                 b,e = self._frameRange
             print("Reading traj:\n"
-                    f"Begin: {b} | End: {e} | Stride: {s}")
+                  f"Begin: {b} | End: {e} | Stride: {s}")
             return read(self.trajPath, index=f'{b}:{e}:{s}')
-
         else:
             return read(self.trajPath, index=f':')
             

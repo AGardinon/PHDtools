@@ -112,8 +112,19 @@ def get_chemFormulas(at: ase.ase.Atoms,
         chemFormulas_dict[chem] = f'mol{i+1}'
     return chemFormulas_dict
     
+    
 # - computes molID for single config, not adding molID to atoms.arrays
-def find_molecules(at, fct=1.0):
+def find_molecules(at: ase.ase.Atoms, 
+                   fct: Union[float, dict]):
+    """TODO
+
+    :param at: _description_
+    :type at: ase.ase.Atoms
+    :param fct: _description_
+    :type fct: Union[float, dict]
+    :return: _description_
+    :rtype: _type_
+    """
     # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
     _, molID = get_connected_atoms(at, fct)
     Natoms, Nmols = np.unique(np.unique(molID, return_counts=True)[1], return_counts=True)
@@ -131,11 +142,19 @@ def get_connected_atoms(at: ase.ase.Atoms,
     Nmol, molID = sparse.csgraph.connected_components(conMat)
     return Nmol, molID
 
-# --------------------------------------------------
 
-# -- natural cutoff modifier
 def modif_natural_cutoffs(at: ase.ase.Atoms,
-                          fct: Union[float, dict]):
+                          fct: Union[float, dict]) -> dict:
+    """TODO
+
+    :param at: _description_
+    :type at: ase.ase.Atoms
+    :param fct: _description_
+    :type fct: Union[float, dict]
+    :raises NameError: _description_
+    :return: _description_
+    :rtype: dict
+    """
     if type(fct) is int or type(fct) is float:
         return neighborlist.natural_cutoffs(at, mult=fct)
     elif type(fct) is dict:
@@ -145,3 +164,23 @@ def modif_natural_cutoffs(at: ase.ase.Atoms,
         raise NameError('Unknown fct type '+str(type(fct)))
 
 
+def ZnumberShift(Znumbers: np.ndarray, 
+                 molSymbols: list,
+                 molIDs: list,
+                 to_shift: Tuple[str, list]) -> np.ndarray:
+    
+    mol_to_shift, Z_to_shift = to_shift
+    dummy = np.max(Znumbers)
+    shifted_Znumbers = Znumbers.copy()
+    #
+    for idx, mol in enumerate(molSymbols):
+        if mol == mol_to_shift:
+            mask = molIDs == idx
+            #
+            for i, tgt in enumerate(mask):
+                if tgt:
+                    if shifted_Znumbers[i] in Z_to_shift:
+                        shifted_Znumbers[i] += dummy
+                    else:
+                        pass
+    return shifted_Znumbers
