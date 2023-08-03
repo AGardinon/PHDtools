@@ -197,26 +197,26 @@ class ASEtraj(Universe):
     def __init__(self, 
                  projectName: str, 
                  trajPath: str, 
-                 frames : Union[tuple, list] = 'all',
+                 frameRange : Union[tuple, list] = 'all',
                  **kwargs):
         super().__init__(projectName, trajPath, **kwargs)
 
         # - specific attributes
-        _ = frame_type_checker(frame_value=frames)
-        self._frames = frames
+        _ = frame_type_checker(frame_value=frameRange)
+        self._frameRange = frameRange
         pass
 
     @property
-    def frames(self) -> Union[tuple, list]:
+    def frameRange(self) -> Union[tuple, list]:
         """Get the frames used for the analysis.
 
         :return: Frame value range.
         :rtype: Union[tuple, list]
         """
-        return self._frames
+        return self._frameRange
     
-    @frames.setter
-    def frames(self, 
+    @frameRange.setter
+    def frameRange(self, 
                value: Union[tuple, list]) -> None:
         """Allow to set different frames values for the analysis.
 
@@ -224,17 +224,17 @@ class ASEtraj(Universe):
         :type value: Union[tuple, list]
         """
         _ = frame_type_checker(frame_value=value)
-        self._frames = value
+        self._frameRange = value
         pass
     
     @property
     def _read(self) -> List[ase.ase.Atoms]:
-        if isinstance(self._frames, tuple):
+        if isinstance(self._frameRange, tuple):
             try:
-                b,e,s = self._frames
+                b,e,s = self._frameRange
             except:
                 s = 1
-                b,e = self._frames
+                b,e = self._frameRange
             print("Reading traj:\n"
                     f"Begin: {b} | End: {e} | Stride: {s}")
             return read(self.trajPath, index=f'{b}:{e}:{s}')
