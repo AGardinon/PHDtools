@@ -8,12 +8,13 @@
 import os
 import json
 import numpy as np
+from typing import Union, List
 from ase.io import read, write
 from .atomstools import *
 from ..computes import misc, traj
 
 # -------------------------------------------------- #
-# --- trajtools 
+# --- Universe 
 
 class ASEProjectManager:
 
@@ -29,7 +30,9 @@ class Universe:
                  trajPath: str,
                  **kwargs):
         """ASE universe tool (similar to the MDA one).
-        Optional kwarg is rcutCorrection (dict), but can be set later.
+        Optional kwargs are:
+        - rcutCorrection: dict (Default=1.0)
+        - moleculeNames: list (Default='molXXX')
 
         :param projectName: Name of the project (aka the system).
         :type projectName: str
@@ -78,13 +81,6 @@ class Universe:
         )
         # -
         print("<end>")
-
-    @property
-    def _kwargs():
-        print("Possible kwargs:\n"
-              "-\t rcutCorrection: dict (Default=1.0)\n"
-              "-\t moleculeNames: list (Default='molXXX')")
-        pass
             
     @property
     def _get_config(self):
@@ -101,7 +97,8 @@ class Universe:
         pass
 
 
-    def set_rcut_correction(self, rcut_dict: dict) -> dict:
+    def set_rcut_correction(self, 
+                            rcut_dict: dict) -> dict:
         """Allow the setting of a rcut dictionary for
         the atoms types in the system.
 
@@ -111,7 +108,7 @@ class Universe:
         :return: Dictionary containing kw: atoms and args: rcut correction.
         :rtype: dict
         """
-        if any(rcut_dict.keys()) == any(rcut_dict.keys()):
+        if set(rcut_dict.keys()) == set(self.symbols):
             self.rcutCorrection = rcut_dict
             return print(f"Updated rcutCorrection = {self.rcutCorrection}\n")
         else:
@@ -158,6 +155,8 @@ class Universe:
 
     @property
     def get_mol_info(self):
+        """TODO
+        """
         # ---
         print("Computing MolIDs ...")
         self.molIDs = get_molIDs(at=self._at0,
@@ -170,11 +169,85 @@ class Universe:
         pass
 
 
-# --- Trajectory handling ---
+# -------------------------------------------------- #
+# --- trajtools
+
+# should be improved with proper exception creation!
+def frame_type_checker(frame_value : Union[tuple, list]) -> None:
+    try:
+        if isinstance(frame_value, (tuple, str)):
+            if frame_value == str and not frame_value == 'all':
+                raise ValueError("ValueError: string values supported is only 'all'.")
+        else:
+            raise ValueError("ValueError: only tuple and string values are accepted.")
+        
+    except ValueError as error:
+        print("!!! " + repr(error)) 
+
 
 class ASEtraj(Universe):
+    """Child class for handling trajectories and doing operation whitin them.
 
-    def __init__(self, projectName: str, trajPath: str, **kwargs):
+    :param Universe: sets the Ase Universe as a baseline to compute trajectory 
+    related quantities.
+    :type Universe: class
+    """
+
+
+    def __init__(self, 
+                 projectName: str, 
+                 trajPath: str, 
+                 frames : Union[tuple, list] = 'all',
+                 **kwargs):
         super().__init__(projectName, trajPath, **kwargs)
 
+        # - specific attributes
+        _ = frame_type_checker(frame_value=frames)
+        self._frames = frames
         pass
+
+    @property
+    def frames(self) -> Union[tuple, list]:
+        """Get the frames used for the analysis.
+
+        :return: Frame value range.
+        :rtype: Union[tuple, list]
+        """
+        return self._frames
+    
+    @frames.setter
+    def frames(self, 
+               value: Union[tuple, list]) -> None:
+        """Allow to set different frames values for the analysis.
+
+        :param value: Frame value range.
+        :type value: Union[tuple, list]
+        """
+        _ = frame_type_checker(frame_value=value)
+        self._frames = value
+        pass
+    
+    @property
+    def _read(self) -> List[ase.ase.Atoms]:
+        if isinstance(self._frames, tuple):
+            try:
+                b,e,s = self._frames
+            except:
+                s = 1
+                b,e = self._frames
+            print("Reading traj:\n"
+                    f"Begin: {b} | End: {e} | Stride: {s}")
+            return read(self.trajPath, index=f'{b}:{e}:{s}')
+
+        else:
+            return read(self.trajPath, index=f':')
+            
+        
+    # @property
+    # def output_dir(self):
+    #     return self._outputDir
+    
+    # @output_dir.setter
+    # def output_dir(self, dir):
+    #     self._outputDir = dir
+    #     pass
