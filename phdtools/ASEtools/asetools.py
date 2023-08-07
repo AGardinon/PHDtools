@@ -181,7 +181,6 @@ def frame_type_checker(frame_value : Union[tuple, list]) -> None:
                 raise ValueError("ValueError: string values supported is only 'all'.")
         else:
             raise ValueError("ValueError: only tuple and string values are accepted.")
-        
     except ValueError as error:
         print("!!! " + repr(error)) 
 
@@ -193,7 +192,6 @@ class ASEtraj(Universe):
     related quantities.
     :type Universe: class
     """
-
     def __init__(self, 
                  projectName: str, 
                  trajPath: str, 
@@ -217,7 +215,7 @@ class ASEtraj(Universe):
     
     @frameRange.setter
     def frameRange(self, 
-               value: Union[tuple, list]) -> None:
+                   value: Union[tuple, list]) -> None:
         """Allow to set different frames values for the analysis.
 
         :param value: Frame value range.

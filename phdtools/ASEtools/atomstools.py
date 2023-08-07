@@ -3,9 +3,9 @@
 # 
 #
 # AUTHOR: Andrea Gardin, Ioan-Bogdan Magdau
-# -> I make use of just a few of ibm tools, the
-# -> complete tools list can be foun in ibm repo
-# -> @ https://github.com/imagdau/Python-Atoms
+# -> I made use of just a few of ibm tools;
+# -> the complete tools list can be foun in 
+# -> ibm repo @ https://github.com/imagdau/Python-Atoms
 # -------------------------------------------------- #
 
 import numpy as np
@@ -116,16 +116,16 @@ def get_chemFormulas(at: ase.ase.Atoms,
 # - computes molID for single config, not adding molID to atoms.arrays
 def find_molecules(at: ase.ase.Atoms, 
                    fct: Union[float, dict]):
-    """TODO
+    """Computes the whole molecules based on the LJ cutoff values of each 
+    atoms in the configuration.
 
-    :param at: _description_
+    :param at: ase atom configuration.
     :type at: ase.ase.Atoms
-    :param fct: _description_
+    :param fct: scaling parameters for the LJ cutoffs.
     :type fct: Union[float, dict]
     :return: _description_
     :rtype: _type_
     """
-    # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
     _, molID = get_connected_atoms(at, fct)
     Natoms, Nmols = np.unique(np.unique(molID, return_counts=True)[1], return_counts=True)
     return Nmols, Natoms
@@ -133,6 +133,16 @@ def find_molecules(at: ase.ase.Atoms,
 
 def get_connected_atoms(at: ase.ase.Atoms, 
                         fct: Union[float, dict]) -> Tuple[int, np.ndarray]:
+    """Computes connected atoms based on the natural LJ cutoff range.
+    Doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
+
+    :param at: ase atom configuration.
+    :type at: ase.ase.Atoms
+    :param fct: scaling parameters for the LJ cutoffs.
+    :type fct: Union[float, dict]
+    :return: _description_
+    :rtype: Tuple[int, np.ndarray]
+    """
     cutOff = modif_natural_cutoffs(at, fct)
     nbLst = neighborlist.NeighborList(cutOff, 
                                       self_interaction=False, 
@@ -145,14 +155,14 @@ def get_connected_atoms(at: ase.ase.Atoms,
 
 def modif_natural_cutoffs(at: ase.ase.Atoms,
                           fct: Union[float, dict]) -> dict:
-    """TODO
+    """Modifies the natural cutoff of the LJ interactions.
 
-    :param at: _description_
+    :param at: ase atom configuration.
     :type at: ase.ase.Atoms
-    :param fct: _description_
+    :param fct: newly defined scaling parameters for the LJ cutoffs.
     :type fct: Union[float, dict]
-    :raises NameError: _description_
-    :return: _description_
+    :raises NameError: only accepts int and dictionary values.
+    :return: newly defined dictionary containing the LJ scaling values for each atoms.
     :rtype: dict
     """
     if type(fct) is int or type(fct) is float:
@@ -188,7 +198,18 @@ def ZnumberShift(Znumbers: np.ndarray,
 
 def center_of_mass(ase_db: List[ase.ase.Atoms],
                    molSymbols: list,
-                   molIDs: list,):
+                   molIDs: list) -> List[ase.ase.Atoms]:
+    """Computes the COM of a given ase atoms databas of frames.
+
+    :param ase_db: ase atoms database.
+    :type ase_db: List[ase.ase.Atoms]
+    :param molSymbols: list of molecule-wise symbols as they appear in the frame configuration.
+    :type molSymbols: list
+    :param molIDs: list of molecule-wise ids as they appear in the frame configuration.
+    :type molIDs: list
+    :return: ase atoms database containitng the COM position.
+    :rtype: List[ase.ase.Atoms]
+    """
     ase_db_com_list = list()
     for at in tqdm(ase_db, desc='Computing COM:'):
         mol_com_tmp = list()
