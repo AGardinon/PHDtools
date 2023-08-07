@@ -229,41 +229,55 @@ class ASEtraj(Universe):
     
     @misc.my_timer
     def read(self, 
+             frameRange: Union[tuple, list] = None,
              Zshift: Tuple[str, list] = None,
+             COM: bool = False,
              save_to_file: str = None) -> List[ase.ase.Atoms]:
-        """_summary_
+        """Read the selected number of the trajectory provided in the project.
 
-        :param Zshift: _description_, defaults to None
+        :param frameRange: frame range , defaults to None
+        :type frameRange: Union[tuple, list], optional
+        :param Zshift: Z numbers shift for atoms of a single molecule, defaults to None
         :type Zshift: Tuple[str, list], optional
         :param save_to_file: _description_, defaults to None
         :type save_to_file: str, optional
-        :return: _description_
+        :return: Ase "database" of frame in list form.
         :rtype: List[ase.ase.Atoms]
         """
-        ase_db = self._read
-        # zshift
-        if Zshift:
-            # print("Applying Z number shift ...\n")
-            newZ = ZnumberShift(Znumbers=self._at0.numbers,
-                                molSymbols=self.molSym,
-                                molIDs=self.molIDs,
-                                to_shift=Zshift)
-            for snap in tqdm(ase_db, desc='Applying Z shift'):
-                snap.numbers = newZ
+        if frameRange:
+            self.frameRange = frameRange
+        else:
+            pass
+        # ---
+        # traj reader
+        if COM:
+            ase_db = self._readCOM
+        else:
+            ase_db = self._read
+            # zshift
+            if Zshift:
+                newZ = ZnumberShift(Znumbers=self._at0.numbers,
+                                    molSymbols=self.molSym,
+                                    molIDs=self.molIDs,
+                                    to_shift=Zshift)
+                for snap in tqdm(ase_db, desc='Applying Z shift'):
+                    snap.numbers = newZ
+        # ---
+        # file saver
+        # may be not needed
         if save_to_file:
             print("Not yet done.")
-
         return ase_db
-    
 
-    def readMolCOM(self, 
-                   save_file=False):
-        pass
-
-    
     @property
     def _read(self) -> List[ase.ase.Atoms]:
+        """Read a given trajectory using ase tools.
+
+        :return: ase atoms databese of frames.
+        :rtype: List[ase.ase.Atoms]
+        """
         if isinstance(self._frameRange, tuple):
+            # frame tuple complition
             try:
                 b,e,s = self._frameRange
             except:
@@ -274,6 +288,19 @@ class ASEtraj(Universe):
             return read(self.trajPath, index=f'{b}:{e}:{s}')
         else:
             return read(self.trajPath, index=f':')
+        
+    @property
+    def _readCOM(self) -> List[ase.ase.Atoms]:
+        """Compute the center of mass of a given ase trajectory using
+        the molecule information of the project.
+
+        :return: ase atoms databese of frames.
+        :rtype: List[ase.ase.Atoms]
+        """
+        return center_of_mass(ase_db=self._read,
+                              molSymbols=self.molSym,
+                              molIDs=self.molIDs)
+
             
         
     # @property

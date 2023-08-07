@@ -13,7 +13,7 @@ from tqdm import tqdm
 import ase
 from ase import Atoms, neighborlist
 from scipy import sparse
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from ..computes import misc
 
 # -------------------------------------------------- #
@@ -184,3 +184,20 @@ def ZnumberShift(Znumbers: np.ndarray,
                     else:
                         pass
     return shifted_Znumbers
+
+
+def center_of_mass(ase_db: List[ase.ase.Atoms],
+                   molSymbols: list,
+                   molIDs: list,):
+    ase_db_com_list = list()
+    for at in tqdm(ase_db, desc='Computing COM:'):
+        mol_com_tmp = list()
+        for m in np.unique(molIDs):
+            mol = at[molIDs==m] #copy by value
+            mass = mol.get_masses()
+            cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+            mol_com_tmp.append(cm)
+        new_com_at = Atoms(positions=np.array(mol_com_tmp), pbc=True, cell=at.cell)
+        new_com_at.arrays['molSym'] = np.array(molSymbols)
+        ase_db_com_list.append(new_com_at)
+    return ase_db_com_list
