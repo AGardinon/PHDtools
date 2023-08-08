@@ -14,53 +14,63 @@ import ase
 from ase import Atoms, neighborlist
 from scipy import sparse
 from typing import Union, Tuple, List
-from ..computes import misc
+from ..computes import traj, misc
 
 # -------------------------------------------------- #
 # --- Atom tools
 
-# -- extract molecules features and identity into a new database (i.e. db, ase traj obj)
-def extract_molInfo(db, mol_chemName_db, fct=1):
-    """
-    Extract all valuable information from a database (db)
-    db: -> list(ase.Atoms)
-    Returns a db with COM-CG trajectory
-    """
-    moldb = list()
-    for at in tqdm(db, desc='Extracting mol information'):
-        if 'molID' not in at.arrays.keys():
-            get_molIDs([at], fct=fct)
-        molID = at.arrays['molID']
-        molCM = list()
-        molSym = list()
-        molQ = list()
-        molF = list()
-        molT = list()
-        for m in np.unique(molID):
-            mol = at[molID==m] #copy by value
-            mass = mol.get_masses()
-            cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
-            molCM.append(cm)
-            molSym.append(mol_chemName_db[mol.symbols.get_chemical_formula()])
-            if 'initial_charges' in at.arrays:
-                molQ.append(np.sum(mol.arrays['initial_charges']))
-            if 'forces' in at.arrays:
-                molF.append(np.sum(mol.arrays['forces'], axis=0))
-                molT.append(np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0))
-        newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
-        newmol.arrays['molID'] = molID
-        newmol.arrays['molSym'] = np.array(molSym)
-        if molQ:
-            newmol.arrays['initial_charges'] = np.array(molQ)
-        if molF:
-            newmol.arrays['forces'] = np.array(molF)
-            newmol.arrays['torques'] = np.array(molT)
-        moldb.append(newmol)
-    return moldb
+# # -- extract molecules features and identity into a new database (i.e. db, ase traj obj)
+# def extract_molInfo(db, mol_chemName_db, fct=1):
+#     """
+#     Extract all valuable information from a database (db)
+#     db: -> list(ase.Atoms)
+#     Returns a db with COM-CG trajectory
+#     """
+#     moldb = list()
+#     for at in tqdm(db, desc='Extracting mol information'):
+#         if 'molID' not in at.arrays.keys():
+#             get_molIDs([at], fct=fct)
+#         molID = at.arrays['molID']
+#         molCM = list()
+#         molSym = list()
+#         molQ = list()
+#         molF = list()
+#         molT = list()
+#         for m in np.unique(molID):
+#             mol = at[molID==m] #copy by value
+#             mass = mol.get_masses()
+#             cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+#             molCM.append(cm)
+#             molSym.append(mol_chemName_db[mol.symbols.get_chemical_formula()])
+#             if 'initial_charges' in at.arrays:
+#                 molQ.append(np.sum(mol.arrays['initial_charges']))
+#             if 'forces' in at.arrays:
+#                 molF.append(np.sum(mol.arrays['forces'], axis=0))
+#                 molT.append(np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0))
+#         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+#         newmol.arrays['molID'] = molID
+#         newmol.arrays['molSym'] = np.array(molSym)
+#         if molQ:
+#             newmol.arrays['initial_charges'] = np.array(molQ)
+#         if molF:
+#             newmol.arrays['forces'] = np.array(molF)
+#             newmol.arrays['torques'] = np.array(molT)
+#         moldb.append(newmol)
+#     return moldb
 
 @misc.my_timer
 def get_molIDs(at: ase.ase.Atoms, 
                fct: Union[float, ase.ase.Atoms]) -> list:
+    """Computes the molecules IDs, a numerical index that differentiate
+    each uniques molecule.
+
+    :param at: atoms configuration.
+    :type at: ase.ase.Atoms
+    :param fct: rcut correction, defaults to 1.0 (i.e., no correction)
+    :type fct: Union[float, ase.ase.Atoms]
+    :return: list of indexes of the molecules of the atomic configuration.
+    :rtype: list
+    """
     # doc @ https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
     _, molID = get_connected_atoms(at=at, 
                                    fct=fct)
@@ -73,13 +83,13 @@ def get_molSym(at: ase.ase.Atoms,
                mol_name: dict) -> list:
     """Get the molecules symbols as they appear in the system xyz configuration.
 
-    :param at: Atoms configuration.
+    :param at: atoms configuration.
     :type at: ase.ase.Atoms
-    :param molIDs: Molecules IDs.
+    :param molIDs: molecules IDs.
     :type molIDs: np.ndarray
-    :param mol_name: Names association to chemical formulas.
+    :param mol_name: names association to chemical formulas.
     :type mol_name: dict
-    :return: List of molecules of the atomic configuration.
+    :return: list of molecules of the atomic configuration.
     :rtype: list
     """
     molSym = list()
@@ -95,11 +105,11 @@ def get_chemFormulas(at: ase.ase.Atoms,
     """Returns a dictionary with the whole molecules inside the
     system (dependent on the rcut correction, fct parameter).
 
-    :param at: Atomic configuration in ase format.
+    :param at: atomic configuration in ase format.
     :type at: ase.ase.Atoms
-    :param fct: Rcut correction, defaults to 1.0 (i.e., no correction)
+    :param fct: rcut correction, defaults to 1.0 (i.e., no correction)
     :type fct: Union[float, dict], optional
-    :return: Whole molecules dictionary.
+    :return: whole molecules dictionary.
     :rtype: dict
     """
     _, molID = get_connected_atoms(at, fct)
@@ -178,7 +188,19 @@ def ZnumberShift(Znumbers: np.ndarray,
                  molSymbols: list,
                  molIDs: list,
                  to_shift: Tuple[str, list]) -> np.ndarray:
-    
+    """_summary_
+
+    :param Znumbers: _description_
+    :type Znumbers: np.ndarray
+    :param molSymbols: _description_
+    :type molSymbols: list
+    :param molIDs: _description_
+    :type molIDs: list
+    :param to_shift: _description_
+    :type to_shift: Tuple[str, list]
+    :return: _description_
+    :rtype: np.ndarray
+    """
     mol_to_shift, Z_to_shift = to_shift
     dummy = np.max(Znumbers)
     shifted_Znumbers = Znumbers.copy()
@@ -222,3 +244,44 @@ def center_of_mass(ase_db: List[ase.ase.Atoms],
         new_com_at.arrays['molSym'] = np.array(molSymbols)
         ase_db_com_list.append(new_com_at)
     return ase_db_com_list
+
+@misc.my_timer
+def ase_mol_unwrap(ase_db: List[ase.ase.Atoms], 
+                   molecule_to_unwrap: List[str], 
+                   molSymbols: list,
+                   method: str) -> dict:
+    """_summary_
+
+    :param ase_db: _description_
+    :type ase_db: List[ase.ase.Atoms]
+    :param molecule_to_unwrap: _description_
+    :type molecule_to_unwrap: str
+    :param molSymbols: _description_
+    :type molSymbols: list
+    :param method: _description_
+    :type method: str
+    :return: _description_
+    :rtype: dict
+    """
+    # - init unwrapping
+    unwrap_obj = traj.XYZunwrapper(method=method)
+    print(f"Chosen method: {unwrap_obj._method.__doc__}\n")
+    unwrap_coord_dict = dict()
+    # - unwrapping quantitities
+    box_values = [at.cell[0][0] for at in ase_db]
+    mol_to_unwrap_idxs = [
+        [i for i,s in enumerate(molSymbols) if s == mol] 
+        for mol in molecule_to_unwrap
+    ]
+    # unwrapping
+    for i,mask in enumerate(mol_to_unwrap_idxs):
+        unwrap_coord_dict[molecule_to_unwrap[i]] = list()
+        for idx in tqdm(mask, desc=f"Unwrapping: {molecule_to_unwrap[i]}"):
+            # get the wrapped coordinates
+            wrapped_coords_tmp = np.array([at[idx].position for at in ase_db])
+            # get the unwrapped coordinates
+            unwrap_coord_dict[molecule_to_unwrap[i]].append(
+                unwrap_obj.fit(xyz=wrapped_coords_tmp,
+                               box=box_values)
+            )
+    return unwrap_coord_dict

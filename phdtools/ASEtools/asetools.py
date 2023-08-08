@@ -5,8 +5,8 @@
 # AUTHOR: Andrea Gardin
 # -------------------------------------------------- #
 
-import os
-import json
+# import os
+# import json
 import numpy as np
 from tqdm import tqdm
 from typing import Union, List
@@ -17,10 +17,10 @@ from ..computes import misc, traj
 # -------------------------------------------------- #
 # --- Universe 
 
-class ASEProjectManager:
+# class ASEProjectManager:
 
-    def func():
-        pass
+#     def func():
+#         pass
 
 
 class Universe:
@@ -120,6 +120,9 @@ class Universe:
                     mol_name: list = None) -> None:
         """Finds the molecules as whole defined by the 
         current LJ rcut.
+
+        :param mol_name: list of names in the same order of appearence.
+        :type mol_name: list
         """
         self.moleculeFormulas = get_chemFormulas(self._at0, 
                                                  fct=self.rcutCorrection)
@@ -260,11 +263,12 @@ class ASEtraj(Universe):
                                     to_shift=Zshift)
                 for snap in tqdm(ase_db, desc='Applying Z shift'):
                     snap.numbers = newZ
-        # ---
-        # file saver
-        # may be not needed
-        if save_to_file:
-            print("Not yet done.")
+        # # ---
+        # # file saver
+        # # may be not needed
+        # if save_to_file:
+        #     print("Not yet done.")
+
         return ase_db
 
     @property
