@@ -8,7 +8,7 @@
 import numpy as np
 import quippy
 from phdtools.computes.misc import parse_config
-from .quipTools import quipSOAP_string
+from .quip import quipSOAP_string
 
 class Descriptors:
     def __init__(self, desc_type, params_file):
