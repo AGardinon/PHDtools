@@ -1,1 +1,1 @@
-from .QUIPtools import quipSOAP_string
+from .QUIP import *

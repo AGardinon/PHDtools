@@ -5,6 +5,8 @@
 # AUTHOR: Andrea Gardin
 # -------------------------------------------------- #
 
+# import
+
 # -------------------------------------------------- #
 # --- custom exception
 class WrongConfigFormat(Exception):
@@ -28,7 +30,19 @@ import json
 import toml
 from types import SimpleNamespace
 
-def parse_config(filename, toNameSpace=False):
+def parse_config(filename: str, 
+                 toNameSpace: bool =False) -> dict:
+    """Parse a file with the .json or .toml extension
+    to a py dictionary.
+
+    :param filename: file absolute path.
+    :type filename: str
+    :param toNameSpace: return Namespace, defaults to False
+    :type toNameSpace: bool, optional
+    :raises WrongConfigFormat: wrong file extension.
+    :return: parsed dictionary.
+    :rtype: dict
+    """
     with open(filename, 'r') as f:
         if filename.endswith('.json'):
             _config = json.load(f)

@@ -6,6 +6,7 @@
 # -------------------------------------------------- #
 
 import copy
+from phdtools.computes.misc import parse_config
 
 # -------------------------------------------------- #
 # --- QUIP descriptor tools
@@ -89,14 +90,28 @@ def _turbo_to_str_helper(original_param: dict,
 
 
 class QUIPtools:
-
+    """Class to parse and prepare the input dictionary for
+    the quip SOAP / turbo-SOAP analysis.
+    """
 
     def __init__(self, 
-                 method: str,
-                 descr_dict: dict) -> None:
+                 method: str =None,
+                 descr_dict: dict =None) -> None:
         self._method = method
-        self._descr_dict = descr_dict
         self.descriptor_str = None
+        if isinstance(descr_dict, dict):
+            self._descr_dict = descr_dict
+        elif isinstance(descr_dict, str):
+            try:
+                self._descr_dict = parse_config(descr_dict, 
+                                                toNameSpace=False)
+            except:
+                raise NameError("File given has to be .json or .toml.\n"
+                                "(Check the path as well).\n")  
+        else:
+            print("!!! Warning.\n"
+                  "Descriptor dictionary not set.\n")
+            self._descr_dict = descr_dict
         pass
 
     @property
