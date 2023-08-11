@@ -5,33 +5,47 @@
 # AUTHOR: Andrea Gardin
 # -------------------------------------------------- #
 
+import quippy
+from phdtools.computes import misc
 from .QUIPtools import QUIPtools
 
-# import numpy as np
-# import quippy
-# from phdtools.computes.misc import parse_config
-# from .quip import quipSOAP_string
 
-# class Descriptors:
-#     def __init__(self, desc_type, params_file):
-#         self.desc_type = desc_type
-#         if type(params_file) == dict:
-#             self.params_dict = params_file
-#         elif type(params_file) == str:
-#             print('Loading the file.')
-#             self.params_dict = parse_config(filename=params_file)[self.desc_type]
-#         self.params_str = quipSOAP_string(self.params_dict, desc_type=self.desc_type)
-#         self.Obj = quippy.descriptors.Descriptor(self.params_str)
+class QUIP(QUIPtools):
+    """Class for computing quippy SOAP and turbo SOAP.
 
-#     def calc_desc(self, ase_db, save_file=None):
-#         print(f"Computing the descriptor ...\n")
-#         print(f"{self.params_str}")
-#         desc_db = self._calc(ase_db)
-#         if type(save_file) == str:
-#             np.save(save_file, desc_db)
-#         else:
-#             raise ValueError("You need to insert a string type name.")
-#         return 
+    :param QUIPtools: helper class to parse input.
+    :type QUIPtools: class
+    """
 
-#     def _calc(self, ase_db):
-#         return self.Obj.calc_descriptor(ase_db)
+    def __init__(self, 
+                 method: str = None, 
+                 descr_dict: dict = None) -> None:
+        super().__init__(method, descr_dict)
+
+        try:
+            self.descriptor_str = self.getString
+        except:
+            raise ValueError("Need to define both method and desct_dict parameters.\n"
+                             f"methdo: {self.method}\n"
+                             f"descr_dict: {self.descriptorDict}\n")
+        pass
+
+    @misc.my_timer
+    def fit(self, 
+            ase_db: list) -> list:
+        print(f"Computing quippy {self.method} ...")
+        return self._fit(ase_db=ase_db)
+
+
+    def _fit(self, 
+             ase_db: list):
+        """Generate the quippy object and compute the descriptor.
+        More information available at the official quippy doc page.
+
+        :param ase_db: _description_
+        :type ase_db: list
+        :return: _description_
+        :rtype: _type_
+        """
+        quippy_object = quippy.descriptors.Descriptor(self.descriptor_str)
+        return quippy_object.calc_descriptor(ase_db)
