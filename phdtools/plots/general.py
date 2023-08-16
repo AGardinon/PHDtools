@@ -1,5 +1,5 @@
 # -------------------------------------------------- #
-# Plot tools
+# Plot tools -General tools
 #
 #
 # AUTHOR: Andrea Gardin
@@ -11,25 +11,37 @@ import matplotlib.pyplot as plt
 # --- FIG & AXES
 
 # -- Set Fig and Axes
-def get_axes(P: int, max_col: int =2, fig_frame: tuple =(3.3,3.), res: int =200):
-    """
-    Define Fig and Axes objects.
+def get_axes(plots: int, 
+             max_col: int =2, 
+             fig_frame: tuple =(3.3,3.), 
+             res: int =200):
+    """Define Fig and Axes objects.
 
+    :param plots: number of plots frames in a fig.
+    :type plots: int
+    :param max_col: number of columns to arrange the frames, defaults to 2
+    :type max_col: int, optional
+    :param fig_frame: frame size, defaults to (3.3,3.)
+    :type fig_frame: tuple, optional
+    :param res: resolution, defaults to 200
+    :type res: int, optional
+    :return: fig and axes object from matplotlib.
+    :rtype: _type_
     """
     # cols and rows definitions
-    cols = P if P <= max_col else max_col
-    rows = int(P / max_col) + int(P % max_col != 0)
+    cols = plots if plots <= max_col else max_col
+    rows = int(plots / max_col) + int(plots % max_col != 0)
 
     fig, axes = plt.subplots(rows,
                              cols,
                              figsize=(cols * fig_frame[0], rows * fig_frame[1]),
                              dpi=res)
     # beauty
-    if P > 1:
+    if plots > 1:
         axes = axes.flatten()
-        for i in range(P, max_col*rows):
+        for i in range(plots, max_col*rows):
             remove_frame(axes[i])
-    elif P == 1:
+    elif plots == 1:
         pass
     
     return fig, axes

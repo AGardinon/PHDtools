@@ -1,1 +1,2 @@
-from phdtools.computes import fes, misc, data, traj
+from phdtools.computes import misc, data, traj
+from phdtools.computes.fes import FES

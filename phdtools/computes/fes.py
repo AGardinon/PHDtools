@@ -7,155 +7,308 @@
 
 import numpy as np
 import phdtools.plots as phdplot
+from typing import Union, List
+from phdtools.computes import misc
 
 # -------------------------------------------------- #
 # --- FES
 
 class BaseFES:
-    """Base FES class to init the computation"""
+    """Base FES class
+    """
 
-    kbUNITS = dict(
+    # class variable for units conversions
+    kb_units = dict(
         kJ = 0.00831446261815324,
         kcal = 0.00198720425864083,
-        unit =  1.0
+        kb =  1.0
     )
 
-    def __init__(self, units, temp):
-        self.units = units
-        self.temp = temp
 
-    @property
-    def kb(self):
-        return BaseFES.kbUNITS[self.units]
-
-    @property
-    def kbT(self):
-        if self.units == 'unit':
-            return self.kb
+    def __init__(self, 
+                 temperature: Union[int, float],
+                 units: str = 'kb'):
+        
+        self._temp = temperature
+        if units in any(self.kb_units.keys()):
+            self._unit = units
         else:
-            return self.kb * self.temp
-
-
-class FES(BaseFES):
-    """Class to compute and plot the pseudo-FES."""
-    def __init__(self, units, temp):
-        super().__init__(units, temp)
-
-    def fit_plot(self, X, Y, bins, range=None, plotArgs=None):
-        """
-        Returns a Dictionary with the fit data.
-        According if the fit is 1D or 2D it changes.
-        Quickly plot the data as well.
-        """
-        compute_dict = self._fit(X, Y, bins, range=range)
-        self._plot(**compute_dict, **plotArgs)
-        return compute_dict
-
-    def fit(self, X, Y, bins,
-            range=None, fillEmpty=True):
-        """
-        Returns a Dictionary with the fit data.
-        According if the fit is 1D or 2D it changes.
-        """
-        return self._fit(X, Y, bins, range=None, fillEmpty=True)
-
-    def plot(self):
-        print("Plotting time")
-        print("Not yet implemented.")
-        # probably best to put the plotting
-        # function in plt tools as stand alone
-        # in addition to this.
+            raise NameError("Invalid unit type.\n"
+                            f"Types available: {self.kb_units.keys()}")
         pass
 
-    def _fit(self, X, Y, bins, range=None, fillEmpty=True):
-        # -> Double variables, 2D fes
-        if isinstance(Y, (list, np.ndarray)):
-            H, xedges, yedges = np.histogram2d(X, Y, bins=bins, 
-                                               range=range, density=True)
-            Z = self._histo_to_fes(H, fillEmpty)
-            XX, YY = self._2DmeshGrid(xedges, yedges, bins)
-            compute_dict = dict(fes = Z.T, 
-                                grid = (XX, YY))
-            self._fesDim = '2D'
-            return compute_dict
+    @property
+    def temp(self) -> Union[int, float]:
+        """Temperature in K.
 
-        # -> Single variable, 1D fes
-        elif not Y:
-            # 1. compute Histograms
-            H, edges = np.histogram(X, bins=bins, range=range, density=True)
-            # 2. compute 1D pseudofes
-            Z = self._histo_to_fes(H, fillEmpty)
-            # 3. compute minvalue
-            edges_ = edges[:-1]
-            minVal = edges_[Z == np.min(Z)]
-            compute_dict = dict(fes = Z.T, 
-                                grid = edges, 
-                                min_value = minVal)
-            self._fesDim = '1D'
-            return compute_dict
+        :return: temperature used for the FES calculation.
+        :rtype: Union[int, float]
+        """
+        return self._temp
+    
+    @temp.setter
+    def temp(self, 
+             value: Union[int, float]) -> None:
+        """Set Temperature.
 
-    def _plot(self, grid, fes, 
-              levels=None,
-              figure=None, 
-              axes=None, 
-              ghost=False,
-              contlabels=True,
-              cbar=True,
-              cbar_label=None):
-        if not levels:
-            levels = 10
+        :param value: temperature in K.
+        :type value: Union[int, float]
+        :raises ValueError: if temperature is negative.
+        """
+        if value >= 0:
+            self._temp = value
+        else:
+            raise ValueError("Temperature must be positive")
+        pass
 
-        # Def fig and axes if not defined
-        if not figure and not axes:
-            figure, axes = phdplot.get_axes(1,1)
+    @property
+    def unit(self) -> str:
+        """Energy unit.
 
-        # Plot either 1D or 2D FES
-        # -> 1D
-        if self._fesDim == '1D':
-            print(f"Plotting {self._fesDim} FES.")
-            axes.plot(grid[:-1],fes)
+        :return: energy unit.
+        :rtype: str
+        """
+        return self._unit
 
-        # -> 2D
-        elif self._fesDim == '2D':
-            print(f"Plotting {self._fesDim} FES.")
-            X,Y = grid
-            cont = axes.contour(X, Y, fes, levels,
-                                colors='k', 
-                                linewidths=0.5, 
-                                zorder=2)
-            if not ghost:
-                surf = axes.contourf(X, Y, fes, levels,
-                                     cmap='coolwarm_r', 
-                                     zorder=1)
-                if cbar:
-                    cbar = figure.colorbar(surf,ax=axes)
-                    if cbar_label:
-                        cbar.set_label(cbar_label)
-            if contlabels:
-                axes.clabel(cont, inline=True, 
-                            colors='k', fontsize=8, 
-                            fmt='%1.1f', zorder=3)
-        # if save_fig:
-        #     figure.savefig(f"{self._fesDim}_pseudo_fes.png")
+    @unit.setter
+    def unit(self, 
+             value: str) -> None:
+        """Set the energy unit.
+
+        :param value: energy unit.
+        :type value: str
+        """
+        if value in any(self.kb_units.keys()):
+            self._unit = value
+        else:
+            raise NameError("Invalid unit type.\n"
+                            f"Types available: {self.kb_units.keys()}")
+        pass
+
+    @property
+    def kbT(self) -> float:
+        """Computes the kbT constant.
+
+        :return: kbT value in the chosen energy units
+        :rtype: float
+        """
+        if self._unit == 'kb':
+            return self._unit
+        else:
+            return self._unit * self._temp
         
+# -------------------------------------------------- #
+
+def histo_to_fes(histo: np.ndarray, 
+                 kbt: float, 
+                 zero_level: Union[str, float] ='min',
+                 fill_empty=True) -> np.ndarray:
+    """_summary_
+
+    :param histo: _description_
+    :type histo: np.ndarray
+    :param kbt: _description_
+    :type kbt: float
+    :param zero_level: _description_, defaults to 'min'
+    :type zero_level: Union[str, float], optional
+    :param fill_empty: _description_, defaults to True
+    :type fill_empty: bool, optional
+    :raises ValueError: _description_
+    :return: _description_
+    :rtype: np.ndarray
+    """
+    zeta = -1 * kbt * np.log(histo)
+    # scaling
+    if isinstance(zero_level, str):
+        if zero_level == 'min':
+            zeta = zeta - np.min(zeta)
+        elif zero_level == 'max':
+            zeta = zeta - np.max(zeta)
+    elif isinstance(zero_level, (float, int)):
+        zeta = zeta - zero_level
+    else:
+        raise ValueError("Unrecognized `zero_level` value.\n"
+                         "Value acceppted: 'max', 'min', numerical.")
+    # fill empty
+    if fill_empty:
+        _max = np.max(zeta[zeta != np.inf])
+        zeta[zeta == np.inf] = _max
+    else:
+        pass
+
+    return zeta
 
 
-    def _histo_to_fes(self, H, fillEmpty):
-        # inversion
-        Z = -1 * self.kbT * np.log(H)
-        # min to zero
-        Z = Z - np.min(Z)
-        if fillEmpty:
-            max_ = np.max(Z[Z != np.inf])
-            Z[Z == np.inf] = max_
-        return Z
+def mesh_grid_2d(X: np.ndarray,
+                 Y: np.ndarray, 
+                 bins: int) -> (np.ndarray, np.ndarray):
+    """_summary_
 
-    def _2DmeshGrid(self, x, y, bins):
-        Xmin = x.min()
-        Xmax = x.max()
-        Ymin = y.min()
-        Ymax = y.max()
-        xx = np.arange(Xmin, Xmax, ((Xmax - Xmin) / bins))
-        yy = np.arange(Ymin, Ymax, ((Ymax - Ymin) / bins))
-        XX, YY = np.meshgrid(xx, yy)
-        return XX, YY
+    :param X: _description_
+    :type X: _type_
+    :param np: _description_
+    :type np: _type_
+    :return: _description_
+    :rtype: _type_
+    """
+    # boundaries - first dimension
+    x_min, x_max = X.min(), X.max()
+    xx = np.arange(x_min, x_max, 
+                   ((x_max - x_min) / bins))
+    # boundaries - second dimension
+    y_min, y_max = Y.min(), Y.max()
+    yy = np.arange(y_min, y_max, 
+                   ((y_max - y_min) / bins))
+    # mesh
+    XX, YY = np.meshgrid(xx, yy)
+    
+    return XX, YY
+
+# ---
+
+class FES(BaseFES):
+    """Computes the FES for a give set of data.
+
+    :param BaseFES: base class
+    :type BaseFES: class
+    """
+
+    def __init__(self, 
+                 temperature: Union[int, float], 
+                 units: str = 'kb'):
+        super().__init__(temperature, units)
+        self.fes_dict = None
+        pass
+
+    @misc.my_timer
+    def fit(self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            bins: int,
+            range: (float, float) =None,
+            zero_level: Union[str, float] ='min',
+            weights: np.ndarray =None,
+            fill_empty=True) -> dict:
+        """_summary_
+
+        :param X: _description_
+        :type X: np.ndarray
+        :param Y: _description_
+        :type Y: np.ndarray
+        :param bins: _description_
+        :type bins: int
+        :param range: _description_, defaults to None
+        :type range: float, float, optional
+        :param zero_level: _description_, defaults to 'min'
+        :type zero_level: Union[str, float], optional
+        :param weights: _description_, defaults to None
+        :type weights: np.ndarray, optional
+        :param fill_empty: _description_, defaults to True
+        :type fill_empty: bool, optional
+        :return: _description_
+        :rtype: dict
+        """
+        
+        if not Y:
+            print("Computing 1D ...")
+            self.fes_dict = self._fit1D
+            return self.fes_dict
+        if Y:
+            print("Computing 2D ...")
+            self.fes_dict = self._fit2D
+            return self.fes_dict
+        else:
+            raise ValueError("There are some problems.")
+
+
+    def _fit1D(self, 
+               X: np.ndarray,
+               bins: int,
+               range: (float, float) =None,
+               zero_level: Union[str, float] ='min',
+               weights: np.ndarray =None,
+               fill_empty=True) -> dict:
+        """_summary_
+
+        :param X: _description_
+        :type X: np.ndarray
+        :param bins: _description_
+        :type bins: int
+        :param range: _description_, defaults to None
+        :type range: float, float, optional
+        :param zero_level: _description_, defaults to 'min'
+        :type zero_level: Union[str, float], optional
+        :param weights: _description_, defaults to None
+        :type weights: np.ndarray, optional
+        :param fill_empty: _description_, defaults to True
+        :type fill_empty: bool, optional
+        :return: _description_
+        :rtype: dict
+        """
+        
+        # compute histo
+        hist, edges = np.histogram(a=X, bins=bins, 
+                                   range=range, weights=weights,
+                                   density=True)
+        # compute fes (inverted histo)
+        zeta = histo_to_fes(histo=hist, kbt=self.kbT,
+                            zero_level=zero_level, 
+                            fill_empty=fill_empty)
+        # output
+        fes_dict = dict(
+            dim = 1,
+            fes = zeta.T,
+            grid = edges
+        )
+        return fes_dict
+    
+
+    def _fit2D(self,
+               X: np.ndarray,
+               Y: np.ndarray,
+               bins: int,
+               range: (float, float) =None,
+               zero_level: Union[str, float] ='min',
+               weights: np.ndarray =None,
+               fill_empty=True) -> dict:
+        """_summary_
+
+        :param X: _description_
+        :type X: np.ndarray
+        :param Y: _description_
+        :type Y: np.ndarray
+        :param bins: _description_
+        :type bins: int
+        :param range: _description_, defaults to None
+        :type range: float, float, optional
+        :param zero_level: _description_, defaults to 'min'
+        :type zero_level: Union[str, float], optional
+        :param weights: _description_, defaults to None
+        :type weights: np.ndarray, optional
+        :param fill_empty: _description_, defaults to True
+        :type fill_empty: bool, optional
+        :return: _description_
+        :rtype: dict
+        """
+
+        # compute histo
+        hist, xedges, yedges = np.histogram2d(x=X, y=Y, bins=bins,
+                                              range=range, weights=weights, 
+                                              density=True)
+        # compute fes
+        zeta = histo_to_fes(histo=hist, kbt=self.kbT,
+                            zero_level=zero_level,
+                            fill_empty=fill_empty)
+        XX, YY = mesh_grid_2d(X=xedges, Y=yedges, bins=bins)
+        # output
+        fes_dict = dict(
+            dim = 2,
+            fes = zeta.T,
+            grid = (XX, YY)
+        )
+        return fes_dict
+
+# -------------------------------------------------- #
+# --- Plot
+
+# import
