@@ -30,7 +30,7 @@ class BaseFES:
                  units: str = 'kb'):
         
         self._temp = temperature
-        if units in any(self.kb_units.keys()):
+        if units in list(self.kb_units.keys()):
             self._unit = units
         else:
             raise NameError("Invalid unit type.\n"
@@ -78,7 +78,7 @@ class BaseFES:
         :param value: energy unit.
         :type value: str
         """
-        if value in any(self.kb_units.keys()):
+        if value in list(self.kb_units.keys()):
             self._unit = value
         else:
             raise NameError("Invalid unit type.\n"
@@ -93,9 +93,9 @@ class BaseFES:
         :rtype: float
         """
         if self._unit == 'kb':
-            return self._unit
+            return self.kb_units[self._unit]
         else:
-            return self._unit * self._temp
+            return self.kb_units[self._unit] * self._temp
         
 # -------------------------------------------------- #
 
@@ -183,8 +183,8 @@ class FES(BaseFES):
     @misc.my_timer
     def fit(self,
             X: np.ndarray,
-            Y: np.ndarray,
             bins: int,
+            Y: np.ndarray =None,
             range: (float, float) =None,
             zero_level: Union[str, float] ='min',
             weights: np.ndarray =None,
@@ -208,16 +208,21 @@ class FES(BaseFES):
         :return: _description_
         :rtype: dict
         """
-        
-        if not Y:
-            print("Computing 1D ...")
-            self.fes_dict = self._fit1D
-            return self.fes_dict
-        if Y:
-            print("Computing 2D ...")
-            self.fes_dict = self._fit2D
-            return self.fes_dict
-        else:
+        try:
+            if isinstance(Y, (np.ndarray, list)):
+                print("Computing 2D ...")
+                self.fes_dict = self._fit2D(X=X, Y=Y, bins=bins, 
+                                            range=range, zero_level=zero_level,
+                                            weights=weights, fill_empty=fill_empty)
+                return self.fes_dict
+
+            else:
+                print("Computing 1D ...")
+                self.fes_dict = self._fit1D(X=X, bins=bins,
+                                            range=range, zero_level=zero_level,
+                                            weights=weights, fill_empty=fill_empty)
+                return self.fes_dict
+        except:
             raise ValueError("There are some problems.")
 
 
