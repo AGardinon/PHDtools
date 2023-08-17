@@ -7,10 +7,12 @@
 
 import numpy as np
 import random
+from typing import Union
 
-def random_shuffle(X, Y=None, n=None):
-    """
-    Random shuffler for a dataset.
+def random_shuffle(X: np.ndarray, 
+                   Y: np.ndarray=None, 
+                   n: int=None):
+    """Random shuffler for a dataset.
     Include also the possibility to shuffle a
     properties array in the same way.
     """
@@ -26,10 +28,11 @@ def random_shuffle(X, Y=None, n=None):
         return X[l[:n], :], Y[l[:n]]
 
 
-# probably it can be improved :(
-def FPS(X, n=-1, ndx=None, retDist=False):
-    """
-    Does Farthest Point Selection on a set of points X
+def FPS(X: np.ndarray,
+        n: int=-1, 
+        ndx: int=None, 
+        retDist: bool=False):
+    """Does Farthest Point Selection on a set of points X
     X is in the form of {X_i} with X_i(x_0,x_1,...,x_N)
     where N are the features or dimensions and i are the
     data sample size.
@@ -70,17 +73,18 @@ def FPS(X, n=-1, ndx=None, retDist=False):
     else:
         return X[fps_ndxs], fps_ndxs
 
+# there is a bug, so it has been removed
+# def normalizeData(X: np.ndarray, 
+#                   mean: Union[int, np.ndarray, ]=None, 
+#                   std: np.ndarray=None):
+#     """Normalize a dataset with default mean=0 and std=1
+#     """
+#     if mean is None:
+#         mean = np.mean(X, axis=0)
+#     Xcenter = X - mean
 
-def normalizeData(X, mean=None, std=None):
-    """
-    Normalize a dataset with default mean=0 and std=1
-    """
-    if mean is None:
-        mean = np.mean(X, axis=0)
-    Xcenter = X - mean
+#     if std is None:
+#         std = np.linalg.norm(X) / np.sqrt(len(Xcenter))
+#     Xnorm = Xcenter / std
 
-    if std is None:
-        std = np.linalg.norm(X) / np.sqrt(len(Xcenter))
-    Xnorm = Xcenter / std
-
-    return Xnorm
+#     return Xnorm
