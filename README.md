@@ -15,10 +15,6 @@ pip install phdtools
 ```
 
 
-## Structure
-
-__Version__ : 1.0.1
-
 Package oranization:
 ------------
 
