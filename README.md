@@ -31,12 +31,13 @@ Package oranization:
     ├── phdtools
     |   |
     |   ├── ASEtools            <- implementation of python tools 
-    |   |                          based on the [ase.atoms](https://wiki.fysik.dtu.dk/ase/index.html) library
+    |   |                          based on the ase.atoms library
     |   |
-    |   ├── computes            <- generic tools for computing useful quantities from scientific data analysis
-    |   |                          to MD simulations. 
+    |   ├── computes            <- generic tools for scientific data analysis
+    |   |                          and MD simulations. 
     |   |
-    |   ├── descriptors         <- implementation of python tools based on the quip descriptor library.
+    |   ├── descriptors         <- implementation of python tools 
+    |   |   |                      based on the quip descriptor library.
     |   |   └── quip
     |   |
     |   └── plots               <- generic tools for aided python image plotting.
@@ -69,7 +70,7 @@ Any kind of feedback is welcome, just be patient.
 
 All the materials have been developed by me (this is probably the reason why is not perfect), nonetheless I grateful for all the usefull discussion I had suring my PhD, which inspired me to create this repository.  
 In particular I would like to acknowledge:  
-- Dr. Giovanni Doni
 - Dr. Riccardo Capelli
+- Dr. Giovanni Doni
 - Dr. Ioan-Bogdan Magdau
 
