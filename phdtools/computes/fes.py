@@ -117,7 +117,7 @@ def histo_to_fes(histo: np.ndarray,
     :return: _description_
     :rtype: np.ndarray
     """
-    zeta = -1 * kbt * np.log(histo)
+    zeta = -1 * kbt * np.log(histo + 1E-7)
     # scaling
     if isinstance(zero_level, str):
         if zero_level == 'min':
@@ -229,7 +229,7 @@ class FES(BaseFES):
     def _fit1D(self, 
                X: np.ndarray,
                bins: int,
-               range: (float, float) =None,
+               range: np.ndarray =None,
                zero_level: Union[str, float] ='min',
                weights: np.ndarray =None,
                fill_empty=True) -> dict:
@@ -261,7 +261,7 @@ class FES(BaseFES):
                             fill_empty=fill_empty)
         # output
         fes_dict = dict(
-            dim = 1,
+            # dim = 1,
             fes = zeta.T,
             grid = edges
         )
@@ -272,10 +272,10 @@ class FES(BaseFES):
                X: np.ndarray,
                Y: np.ndarray,
                bins: int,
-               range: (float, float) =None,
+               range: np.ndarray =None,
                zero_level: Union[str, float] ='min',
                weights: np.ndarray =None,
-               fill_empty=True) -> dict:
+               fill_empty: bool =True) -> dict:
         """_summary_
 
         :param X: _description_
@@ -307,7 +307,7 @@ class FES(BaseFES):
         XX, YY = mesh_grid_2d(X=xedges, Y=yedges, bins=bins)
         # output
         fes_dict = dict(
-            dim = 2,
+            # dim = 2,
             fes = zeta.T,
             grid = (XX, YY)
         )
