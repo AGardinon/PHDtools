@@ -11,7 +11,7 @@ Handle with care!
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install **PHDtools**.
 
 ```bash
-pip install phdtools
+pip install .
 ```
 
 
@@ -45,14 +45,15 @@ Package oranization:
 ## Roadmap
 
 - [x] Add MD simulation tools
-    - [x] trajectory unwrapper (v1.0.1)
-- [x] Add [ase.atoms](https://wiki.fysik.dtu.dk/ase/index.html) support (v1.0.1)
-- [x] Add [quip](https://libatoms.github.io/GAP/index.html) SOAP/turbo-SOAP descriptors support (v1.0.1)
-- [x] Add FES computes and plot support (v1.0.1)
+    - [x] trajectory unwrapper (v1.0.0)
+- [x] Add [ase.atoms](https://wiki.fysik.dtu.dk/ase/index.html) support (v1.0.0)
+- [x] Add [quip](https://libatoms.github.io/GAP/index.html) SOAP/turbo-SOAP descriptors support (v1.0.0)
+- [x] Add FES computes and plot support (v1.0.0)
 - [ ] Add project manager for ASEtools
 - [ ] Add MD simulation tools
     - [ ] RDF
     - [ ] MDAnalysis tools
+- [ ] Add structural motifs pipeline
 - [ ] Add kinetic models / MSM model support
 - [ ] Add ML tools
 
